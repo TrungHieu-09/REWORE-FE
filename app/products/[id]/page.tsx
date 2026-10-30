@@ -4,10 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { LoadingSkeleton } from "../../components/admin/AdminStates";
-import { PillButton } from "../../components/admin/PillButton";
-import { availabilityStatusTone, productStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
 import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import LoginModal from "../../components/LoginModal";
 import { useAuth } from "../../context/AuthContext";
 import {
   ApiError,
@@ -22,18 +21,18 @@ import {
 } from "../../lib/api";
 
 const CONDITION_LABEL: Record<ProductCondition, string> = {
-  NEW: "Mới",
-  LIKE_NEW: "Như mới",
-  GOOD: "Tốt",
-  FAIR: "Khá",
-  POOR: "Cũ",
+  NEW: "New with tags",
+  LIKE_NEW: "Like New",
+  GOOD: "Good Vintage Condition",
+  FAIR: "Fair Vintage Wear",
+  POOR: "Distressed Archive",
 };
 
 const AVAILABILITY_LABEL: Record<string, string> = {
-  available: "CÒN HÀNG",
-  upcoming_drop: "SẮP DROP",
-  held: "ĐANG GIỮ",
-  sold: "HẾT HÀNG",
+  available: "AVAILABLE",
+  upcoming_drop: "UPCOMING DROP",
+  held: "IN ESCROW HOLD",
+  sold: "SOLD OUT",
 };
 
 function formatVnd(amount: number) {
@@ -44,49 +43,12 @@ function formatVnd(amount: number) {
   }).format(amount);
 }
 
-function ProductImage({
-  src,
-  alt,
-  className,
-  loading,
-  sizes,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-  loading?: "eager" | "lazy";
-  sizes: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  const imageSrc = apiAssetUrl(src);
-
-  if (!imageSrc || failed) {
-    return (
-      <div className="product-detail-image-fallback">
-        <span className="material-symbols-outlined">image_not_supported</span>
-        <span>Không có ảnh</span>
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={imageSrc}
-      alt={alt}
-      fill
-      className={className}
-      loading={loading}
-      sizes={sizes}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const productId = params?.id ?? "";
   const { isLoggedIn, isLoading } = useAuth();
+
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -98,63 +60,66 @@ export default function ProductDetailPage() {
   const [orderBusy, setOrderBusy] = useState(false);
   const [shippingAddress, setShippingAddress] = useState("");
   const [orderNote, setOrderNote] = useState("");
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [modalSource, setModalSource] = useState("general");
 
   useEffect(() => {
     if (!productId) return;
 
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setMessage("");
+    setLoading(true);
+    setMessage("");
 
-      productsApi
-        .get(productId)
-        .then((res) => {
-          if (!cancelled) {
-            setProduct(res.data);
-            setActiveImage(0);
-            if (isLoggedIn) {
-              Promise.allSettled([
-                cartApi.check(res.data.id),
-                wishlistApi.check(res.data.id),
-              ]).then(([cartResult, wishlistResult]) => {
-                if (cancelled) return;
-                if (cartResult.status === "fulfilled") setCartOn(cartResult.value.isInCart);
-                if (wishlistResult.status === "fulfilled") setWishlistOn(wishlistResult.value.isInWishlist);
-              });
-            }
+    productsApi
+      .get(productId)
+      .then((res) => {
+        if (!cancelled) {
+          setProduct(res.data);
+          setActiveImage(0);
+          if (isLoggedIn) {
+            Promise.allSettled([
+              cartApi.check(res.data.id),
+              wishlistApi.check(res.data.id),
+            ]).then(([cartResult, wishlistResult]) => {
+              if (cancelled) return;
+              if (cartResult.status === "fulfilled") setCartOn(cartResult.value.isInCart);
+              if (wishlistResult.status === "fulfilled") setWishlistOn(wishlistResult.value.isInWishlist);
+            });
           }
-        })
-        .catch((err) => {
-          if (!cancelled) setMessage(err instanceof ApiError ? err.message : "Không tải được sản phẩm.");
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    }, 0);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setMessage(err instanceof ApiError ? err.message : "Không tải được sản phẩm.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
     };
   }, [isLoggedIn, productId]);
 
-  const images = useMemo(() => product?.images ?? [], [product?.images]);
-  const mainImage = images[activeImage] ?? images[0] ?? "";
-  const sellerName = sellerDisplayName(product?.seller);
+  const images = useMemo(() => {
+    if (!product?.images?.length) return [];
+    return product.images.map((img) => apiAssetUrl(img));
+  }, [product]);
+
+  const mainImage = images[activeImage] || images[0] || "";
+  const sellerName = product ? sellerDisplayName(product.seller) : "REWORE Seller";
   const canBuy = product?.status === "ACTIVE" && product?.availabilityStatus === "available";
 
   const toggleWishlist = async () => {
     if (!product) return;
     if (!isLoggedIn) {
-      router.push("/login");
+      setModalSource("wishlist");
+      setLoginModalOpen(true);
       return;
     }
 
+    setWishlistBusy(true);
     const nextState = !wishlistOn;
     setWishlistOn(nextState);
-    setWishlistBusy(true);
-    setMessage("");
 
     try {
       if (nextState) {
@@ -165,7 +130,7 @@ export default function ProductDetailPage() {
     } catch (err) {
       if (nextState && err instanceof ApiError && err.status === 409) return;
       setWishlistOn(!nextState);
-      setMessage(err instanceof ApiError ? err.message : "Không cập nhật được wishlist.");
+      setMessage(err instanceof ApiError ? err.message : "Cập nhật wishlist thất bại.");
     } finally {
       setWishlistBusy(false);
     }
@@ -174,20 +139,19 @@ export default function ProductDetailPage() {
   const addToCart = async () => {
     if (!product) return;
     if (!isLoggedIn) {
-      router.push("/login");
+      setModalSource("cart");
+      setLoginModalOpen(true);
       return;
     }
 
     setCartBusy(true);
-    setMessage("");
     try {
       await cartApi.add(product.id);
       setCartOn(true);
-      setMessage("Đã thêm vào giỏ hàng. Lưu ý: giỏ hàng không giữ hàng, ai mua trước thì sản phẩm sẽ hết hàng.");
+      setMessage("Đã thêm món này vào giỏ hàng.");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409 && err.message.includes("đã có")) {
+      if (err instanceof ApiError && err.status === 409) {
         setCartOn(true);
-        setMessage("Sản phẩm đã có trong giỏ hàng.");
         return;
       }
       setMessage(err instanceof ApiError ? err.message : "Không thể thêm vào giỏ hàng.");
@@ -199,25 +163,32 @@ export default function ProductDetailPage() {
   const buyNow = async () => {
     if (!product) return;
     if (!isLoggedIn) {
-      router.push("/login");
+      setModalSource("hold");
+      setLoginModalOpen(true);
       return;
     }
 
     setOrderBusy(true);
     setMessage("");
+
     try {
       const res = await ordersApi.create({
         productId: product.id,
         shippingAddress: shippingAddress.trim() || undefined,
         note: orderNote.trim() || undefined,
       });
-      setProduct((current) => current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current);
-      setCartOn(false);
-      setMessage(`${res.message} Mã đơn: ${res.data.id}`);
+
+      setProduct((current) =>
+        current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current
+      );
+      setMessage(`Đơn hàng #${res.data.id} đã được tạo thành công dưới bảo vệ Escrow.`);
+      setTimeout(() => router.push("/profile"), 2000);
     } catch (err) {
       setMessage(err instanceof ApiError ? err.message : "Không thể tạo đơn hàng.");
       if (err instanceof ApiError && err.status === 409) {
-        setProduct((current) => current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current);
+        setProduct((current) =>
+          current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current
+        );
       }
     } finally {
       setOrderBusy(false);
@@ -225,184 +196,237 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <>
+    <div className="bg-[#fff8f5] text-[#231a11] font-body-md antialiased min-h-screen flex flex-col">
       <Navbar />
-      <div className="product-detail-root">
-        <main className="product-detail-wrap">
-          <Link href="/shop" className="product-detail-back">
-            <span className="material-symbols-outlined">arrow_back</span>
-            Quay lại Shop
+
+      <main className="flex-grow w-full max-w-[1200px] mx-auto px-5 sm:px-6 py-8">
+        {/* Back Link */}
+        <div className="mb-6">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#88726c] hover:text-[#974226] transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <span>Back to Curated Shop</span>
           </Link>
+        </div>
 
-          {loading || isLoading ? (
-            <LoadingSkeleton rows={4} />
-          ) : !product ? (
-            <section className="product-detail-empty">
-              <span className="material-symbols-outlined">inventory_2</span>
-              <h1>Không tìm thấy sản phẩm</h1>
-              <p>{message || "Sản phẩm này có thể đã bị gỡ hoặc không còn khả dụng."}</p>
-              <Link href="/shop">Xem sản phẩm khác</Link>
-            </section>
-          ) : (
-            <>
-              {message && (
-                <div className="admin-warning-banner">
-                  <span className="material-symbols-outlined">error</span>
-                  <span>{message}</span>
-                </div>
-              )}
+        {loading || isLoading ? (
+          <div className="flex items-center justify-center py-28">
+            <div className="w-8 h-8 rounded-full border-2 border-[#974226] border-t-transparent animate-spin"></div>
+          </div>
+        ) : !product ? (
+          <div className="bg-white border border-[#dbc1b9]/40 rounded-3xl p-12 text-center max-w-md mx-auto my-12 shadow-xs">
+            <span className="material-symbols-outlined text-4xl text-[#88726c] mb-3">inventory_2</span>
+            <h1 className="font-headline-lg text-2xl font-bold text-[#231a11] mb-2">Item Not Found</h1>
+            <p className="text-sm text-[#55433d] mb-6">This item may have been sold or removed from the archive.</p>
+            <Link
+              href="/shop"
+              className="inline-flex px-6 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold"
+            >
+              Browse other drops
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {message && (
+              <div className="bg-[#fff1e8] border border-[#dbc1b9] rounded-2xl p-4 text-xs font-semibold text-[#231a11] flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#974226]">info</span>
+                <span>{message}</span>
+              </div>
+            )}
 
-              <section className="product-detail-grid">
-                <div className="product-detail-gallery">
-                  <div className="product-detail-main-image">
-                    {mainImage ? (
-                      <ProductImage
-                        src={mainImage}
-                        alt={product.title}
-                        className="product-detail-img"
-                        loading="eager"
-                        sizes="(max-width: 900px) 100vw, 56vw"
-                      />
-                    ) : (
-                      <div className="product-detail-image-fallback">
-                        <span className="material-symbols-outlined">image_not_supported</span>
-                        <span>Không có ảnh</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {images.length > 1 && (
-                    <div className="product-detail-thumbs">
-                      {images.map((image, index) => (
-                        <button
-                          type="button"
-                          className={`product-detail-thumb${activeImage === index ? " active" : ""}`}
-                          key={`${image}-${index}`}
-                          onClick={() => setActiveImage(index)}
-                          aria-label={`Xem ảnh ${index + 1}`}
-                        >
-                          <ProductImage src={image} alt={`${product.title} ${index + 1}`} sizes="90px" />
-                        </button>
-                      ))}
+            {/* Product Detail Grid (Gallery + Details Panel) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Gallery (7 cols) */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="relative aspect-[3/4] w-full rounded-[24px] overflow-hidden bg-[#f8e5d6] shadow-md border border-[#dbc1b9]/30">
+                  {mainImage ? (
+                    <img
+                      src={mainImage}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#88726c]">
+                      <span className="material-symbols-outlined text-4xl mb-2">checkroom</span>
+                      <span className="font-label-md text-sm">Archival scan in progress</span>
                     </div>
                   )}
-                </div>
 
-                <aside className="product-detail-panel">
-                  <div className="product-detail-status-row">
-                    <StatusBadge label={product.status} tone={productStatusTone(product.status)} />
-                    <StatusBadge
-                      label={AVAILABILITY_LABEL[product.availabilityStatus ?? "available"] ?? String(product.availabilityStatus)}
-                      tone={availabilityStatusTone(product.availabilityStatus)}
-                    />
-                    <span className="product-detail-save-count">
-                      <span className="material-symbols-outlined">favorite</span>
-                      {product._count?.wishlistItems ?? 0} saved
+                  {/* Top badges */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <span className="px-3 py-1 rounded-full bg-[#974226] text-white text-[11px] font-bold tracking-wider uppercase shadow-xs">
+                      {AVAILABILITY_LABEL[product.availabilityStatus ?? "available"] || product.status}
                     </span>
                   </div>
 
-                  <h1>{product.title}</h1>
-                  <p className="product-detail-price">{formatVnd(product.price)}</p>
+                  {/* Frosted Heart Button */}
+                  <button
+                    onClick={toggleWishlist}
+                    className={`absolute top-4 right-4 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all z-10 shadow-xs ${
+                      wishlistOn ? "bg-white text-[#974226]" : "bg-white/50 text-[#231a11] hover:bg-white/80"
+                    }`}
+                  >
+                    <span
+                      className="material-symbols-outlined text-xl"
+                      style={{ fontVariationSettings: wishlistOn ? "'FILL' 1" : "'FILL' 0" }}
+                    >
+                      favorite
+                    </span>
+                  </button>
+                </div>
 
-                  <div className="product-detail-seller">
-                    <span className="sp-shop-avatar">{sellerName[0]}</span>
-                    <div>
-                      <strong>{sellerName}</strong>
-                      <small>{product.seller?.isVerified ? "Seller đã xác thực" : "REWORE seller"}</small>
-                    </div>
-                    {product.seller?.isVerified && (
-                      <span className="material-symbols-outlined product-detail-verified">verified</span>
-                    )}
-                  </div>
-
-                  <div className="product-detail-facts">
-                    <div>
-                      <span>Danh mục</span>
-                      <strong>{product.category}</strong>
-                    </div>
-                    <div>
-                      <span>Tình trạng</span>
-                      <strong>{CONDITION_LABEL[product.condition]}</strong>
-                    </div>
-                    <div>
-                      <span>Thương hiệu</span>
-                      <strong>{product.brand || "Không ghi"}</strong>
-                    </div>
-                    <div>
-                      <span>Size</span>
-                      <strong>{product.size || "Không ghi"}</strong>
-                    </div>
-                    <div>
-                      <span>Màu sắc</span>
-                      <strong>{product.color || "Không ghi"}</strong>
-                    </div>
-                    <div>
-                      <span>Lượt xem</span>
-                      <strong>{product.viewCount}</strong>
-                    </div>
-                  </div>
-
-                  {product.tags.length > 0 && (
-                    <div className="product-detail-tags">
-                      {product.tags.map((tag) => (
-                        <span key={tag}>#{tag}</span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="product-detail-actions">
-                    <div className="w-full grid gap-3 mb-2">
-                      <input
-                        className="admin-input"
-                        value={shippingAddress}
-                        onChange={(event) => setShippingAddress(event.target.value)}
-                        placeholder="Địa chỉ nhận hàng"
-                      />
-                      <textarea
-                        className="admin-textarea"
-                        value={orderNote}
-                        onChange={(event) => setOrderNote(event.target.value)}
-                        placeholder="Ghi chú cho seller"
-                      />
-                    </div>
-                    <PillButton type="button" tone="accent" disabled={!canBuy || orderBusy} onClick={buyNow}>
-                      <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
-                      {canBuy ? (orderBusy ? "Đang tạo đơn..." : "Mua ngay") : "Hết hàng"}
-                    </PillButton>
-                    <PillButton type="button" tone="orange" disabled={!canBuy || cartBusy || cartOn} onClick={addToCart}>
-                      <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
-                      {cartOn ? "Đã trong giỏ" : cartBusy ? "Đang thêm..." : "Thêm vào giỏ"}
-                    </PillButton>
-                    <PillButton type="button" tone="muted" disabled={wishlistBusy} onClick={toggleWishlist}>
-                      <span
-                        className="material-symbols-outlined text-[16px]"
-                        style={{ fontVariationSettings: wishlistOn ? "'FILL' 1" : "'FILL' 0" }}
+                {/* Thumbnails row */}
+                {images.length > 1 && (
+                  <div className="flex gap-3 overflow-x-auto no-scrollbar pt-2">
+                    {images.map((img, idx) => (
+                      <button
+                        key={`${img}-${idx}`}
+                        onClick={() => setActiveImage(idx)}
+                        className={`relative w-20 h-24 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all ${
+                          activeImage === idx ? "border-[#974226] scale-102" : "border-transparent opacity-70 hover:opacity-100"
+                        }`}
                       >
-                        favorite
-                      </span>
-                      {wishlistOn ? "Đã lưu" : "Lưu wishlist"}
-                    </PillButton>
+                        <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
                   </div>
-                  <p className="product-detail-cart-note">
-                    Giỏ hàng không giữ hàng. Khi người khác mua trước, sản phẩm trong giỏ sẽ chuyển sang hết hàng.
-                  </p>
-                </aside>
-              </section>
+                )}
+              </div>
 
-              <section className="product-detail-description">
-                <div className="seller-create-section-head">
-                  <span className="material-symbols-outlined">notes</span>
+              {/* Panel (5 cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase font-bold tracking-widest text-[#974226]">
+                      {product.brand || "Vintage Atelier"}
+                    </span>
+                    <span className="text-xs text-[#88726c]">·</span>
+                    <span className="text-xs font-semibold text-[#55433d]">
+                      {product.category}
+                    </span>
+                  </div>
+
+                  <h1 className="font-display-lg text-2xl sm:text-3xl font-bold text-[#231a11] tracking-tight leading-snug">
+                    {product.title}
+                  </h1>
+
+                  <p className="font-display-lg text-2xl sm:text-3xl text-[#974226] font-bold mt-3">
+                    {formatVnd(product.price)}
+                  </p>
+                </div>
+
+                {/* Seller Strip */}
+                <div className="bg-[#fff1e8] border border-[#dbc1b9]/40 rounded-2xl p-4 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#feeadc] text-[#974226] font-bold flex items-center justify-center text-sm border border-[#dbc1b9]/50">
+                      {sellerName[0]?.toUpperCase() || "S"}
+                    </div>
+                    <div>
+                      <h4 className="font-label-md text-sm font-bold text-[#231a11] flex items-center gap-1.5">
+                        <span>{sellerName}</span>
+                        {product.seller?.isVerified && (
+                          <span className="material-symbols-outlined text-[#556138] text-base" title="Verified Seller">
+                            verified
+                          </span>
+                        )}
+                      </h4>
+                      <p className="font-body-md text-xs text-[#55433d]">
+                        {product.seller?.isVerified ? "Verified Boutique Atelier" : "Community Curator"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 text-[11px] bg-[#dae9b5] text-[#151f01] font-semibold px-2 py-0.5 rounded-full">
+                    Top Rated
+                  </span>
+                </div>
+
+                {/* Garment Facts Grid */}
+                <div className="grid grid-cols-2 gap-3 bg-white border border-[#dbc1b9]/40 rounded-2xl p-4 text-xs">
                   <div>
-                    <h2>Mô tả sản phẩm</h2>
-                    <p>Thông tin do seller cung cấp.</p>
+                    <span className="text-[#88726c] block mb-0.5">Condition</span>
+                    <strong className="text-[#231a11] font-semibold">{CONDITION_LABEL[product.condition]}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#88726c] block mb-0.5">Size</span>
+                    <strong className="text-[#231a11] font-semibold">{product.size || "Free Size"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#88726c] block mb-0.5">Color Palette</span>
+                    <strong className="text-[#231a11] font-semibold">{product.color || "Archival Earth"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#88726c] block mb-0.5">Authenticity</span>
+                    <strong className="text-[#556138] font-semibold">Verified Escrow</strong>
                   </div>
                 </div>
-                <p>{product.description}</p>
-              </section>
-            </>
-          )}
-        </main>
-      </div>
-    </>
+
+                {/* Delivery details & Purchase controls */}
+                <div className="space-y-3 pt-2">
+                  <input
+                    type="text"
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Shipping delivery address"
+                    className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
+                  />
+                  <input
+                    type="text"
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Order note for seller (optional)"
+                    className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
+                  />
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      disabled={!canBuy || orderBusy}
+                      onClick={buyNow}
+                      className="flex-1 py-3 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">lock</span>
+                      <span>{canBuy ? (orderBusy ? "Creating Escrow Order..." : "Buy with Escrow") : "Sold Out"}</span>
+                    </button>
+
+                    <button
+                      disabled={!canBuy || cartBusy || cartOn}
+                      onClick={addToCart}
+                      className="px-5 py-3 border border-[#974226] text-[#974226] rounded-full font-label-md text-xs font-semibold hover:bg-[#feeadc] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-base">shopping_bag</span>
+                      <span>{cartOn ? "In Bag" : "Add to Bag"}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-[#88726c] text-center pt-1">
+                    Protected by REWORE 15-Minute Priority Escrow Hold Protocol.
+                  </p>
+                </div>
+
+                {/* Description */}
+                <div className="border-t border-[#dbc1b9]/30 pt-4">
+                  <h3 className="font-headline-md text-sm font-bold text-[#231a11] mb-2">
+                    Archival Notes &amp; Provenance
+                  </h3>
+                  <p className="font-body-md text-xs text-[#55433d] leading-relaxed whitespace-pre-line">
+                    {product.description || "A verified circular luxury piece carefully inspected for material integrity and provenance."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <Footer />
+
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        actionSource={modalSource}
+      />
+    </div>
   );
 }
