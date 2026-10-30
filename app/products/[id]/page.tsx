@@ -108,6 +108,7 @@ export default function ProductDetailPage() {
   const mainImage = images[activeImage] || images[0] || "";
   const sellerName = product ? sellerDisplayName(product.seller) : "REWORE Seller";
   const canBuy = product?.status === "ACTIVE" && product?.availabilityStatus === "available";
+  const isAuction = product?.status === "AUCTION";
 
   const toggleWishlist = async () => {
     if (!product) return;
@@ -365,43 +366,73 @@ export default function ProductDetailPage() {
 
                 {/* Delivery details & Purchase controls */}
                 <div className="space-y-3 pt-2">
-                  <input
-                    type="text"
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Shipping delivery address"
-                    className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
-                  />
-                  <input
-                    type="text"
-                    value={orderNote}
-                    onChange={(e) => setOrderNote(e.target.value)}
-                    placeholder="Order note for seller (optional)"
-                    className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
-                  />
+                  {isAuction ? (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-2xl bg-[#feeadc]/60 border border-[#974226]/30 text-xs text-[#974226]">
+                        <p className="font-semibold flex items-center gap-1.5 mb-1">
+                          <span className="material-symbols-outlined text-base">gavel</span>
+                          Sản phẩm mở bán theo hình thức Đấu giá
+                        </p>
+                        <p className="text-[#55433d]">
+                          Món đồ độc bản này được người bán đưa vào sàn đấu giá để người mua tự do trả giá. Bạn có thể tham gia trả giá ngay tại phòng đấu giá trực tiếp.
+                        </p>
+                      </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      disabled={!canBuy || orderBusy}
-                      onClick={buyNow}
-                      className="flex-1 py-3 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-base">lock</span>
-                      <span>{canBuy ? (orderBusy ? "Creating Escrow Order..." : "Buy with Escrow") : "Sold Out"}</span>
-                    </button>
+                      <Link
+                        href="/auctions"
+                        className="w-full py-3.5 bg-[#4a2e63] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#5e3b7d] transition-all shadow-md flex items-center justify-center gap-2 active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-base">gavel</span>
+                        <span>Tham gia Đấu giá món này</span>
+                      </Link>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Địa chỉ giao hàng nhận hàng"
+                        className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
+                      />
+                      <input
+                        type="text"
+                        value={orderNote}
+                        onChange={(e) => setOrderNote(e.target.value)}
+                        placeholder="Ghi chú cho người bán (nếu có)"
+                        className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
+                      />
 
-                    <button
-                      disabled={!canBuy || cartBusy || cartOn}
-                      onClick={addToCart}
-                      className="px-5 py-3 border border-[#974226] text-[#974226] rounded-full font-label-md text-xs font-semibold hover:bg-[#feeadc] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-base">shopping_bag</span>
-                      <span>{cartOn ? "In Bag" : "Add to Bag"}</span>
-                    </button>
-                  </div>
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          disabled={!canBuy || orderBusy}
+                          onClick={buyNow}
+                          className="flex-1 py-3 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-base">lock</span>
+                          <span>
+                            {canBuy
+                              ? orderBusy
+                                ? "Đang tạo đơn hàng..."
+                                : "Mua ngay (Bảo vệ Escrow)"
+                              : "Đã bán hết"}
+                          </span>
+                        </button>
+
+                        <button
+                          disabled={!canBuy || cartBusy || cartOn}
+                          onClick={addToCart}
+                          className="px-5 py-3 border border-[#974226] text-[#974226] rounded-full font-label-md text-xs font-semibold hover:bg-[#feeadc] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-base">shopping_bag</span>
+                          <span>{cartOn ? "Đã trong giỏ" : "Thêm vào giỏ"}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
 
                   <p className="text-[11px] text-[#88726c] text-center pt-1">
-                    Protected by REWORE 15-Minute Priority Escrow Hold Protocol.
+                    Được bảo vệ 100% bởi REWORE Escrow: Tiền chỉ chuyển cho người bán sau khi bạn nhận và kiểm định hàng.
                   </p>
                 </div>
 

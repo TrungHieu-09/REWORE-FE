@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   ApiError,
   apiAssetUrl,
+  cartApi,
   productsApi,
   sellerDisplayName,
   wishlistApi,
@@ -69,9 +70,7 @@ const DEFAULT_CURATED_ITEMS: ShopItem[] = [
     shopInitial: "A",
     price: 2450000,
     priceLabel: "2.450.000đ",
-    badge: "held",
-    badgeLabel: "HELD (08:24)",
-    heldCountdown: "08:24",
+    badge: "available",
     category: "Jackets",
     style: "Streetwear",
     imageUrl:
@@ -329,7 +328,6 @@ export default function ShopPage() {
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [activeAvailability, setActiveAvailability] = useState<"all" | Badge>("all");
-  const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedCondition, setSelectedCondition] = useState<string>("");
   const [selectedStyle, setSelectedStyle] = useState<string>("");
   const [selectedPriceRange, setSelectedPriceRange] = useState<string>("");
@@ -351,8 +349,8 @@ export default function ShopPage() {
     setDataLoading(true);
 
     Promise.allSettled([
-      productsApi.list({ limit: 50, sortBy: "newest" }),
-      isLoggedIn ? wishlistApi.list({ limit: 50 }) : Promise.resolve({ data: [] }),
+      productsApi.list({ limit: 100, sortBy: "newest" }),
+      isLoggedIn ? wishlistApi.list({ limit: 100 }) : Promise.resolve({ data: [] }),
     ])
       .then(([productsResult, wishlistResult]) => {
         if (cancelled) return;
@@ -415,15 +413,30 @@ export default function ShopPage() {
     }
   };
 
-  const handleHoldAction = (item: ShopItem) => {
+  const handleAddToCart = async (item: ShopItem) => {
     if (!isLoggedIn) {
-      setModalSource("hold");
+      setModalSource("cart");
       setLoginModalOpen(true);
       return;
     }
 
-    setNoticeMessage(`Đã đặt quyền giữ 15 phút cho: "${item.name}". Hệ thống escrow đang khóa đơn hàng.`);
-    setTimeout(() => setNoticeMessage(""), 4500);
+    if (item.apiId) {
+      try {
+        await cartApi.add(item.apiId);
+        setNoticeMessage(`🛍️ Đã thêm "${item.name}" vào giỏ hàng thành công!`);
+        setTimeout(() => setNoticeMessage(""), 4500);
+      } catch (err: any) {
+        if (err instanceof ApiError && err.status === 409) {
+          setNoticeMessage(`🛍️ "${item.name}" đã có sẵn trong giỏ hàng.`);
+        } else {
+          setNoticeMessage(err?.message || "Không thể thêm vào giỏ hàng.");
+        }
+        setTimeout(() => setNoticeMessage(""), 4500);
+      }
+    } else {
+      setNoticeMessage(`🛍️ Đã thêm "${item.name}" vào giỏ hàng thành công!`);
+      setTimeout(() => setNoticeMessage(""), 4500);
+    }
   };
 
   const handleActionClick = (type: string) => {
@@ -439,7 +452,6 @@ export default function ShopPage() {
   const clearAllFilters = () => {
     setActiveCategory("All");
     setActiveAvailability("all");
-    setSelectedSize("");
     setSelectedCondition("");
     setSelectedStyle("");
     setSelectedPriceRange("");
@@ -458,12 +470,6 @@ export default function ShopPage() {
 
     if (activeAvailability !== "all") {
       result = result.filter((i) => i.badge === activeAvailability);
-    }
-
-    if (selectedSize) {
-      result = result.filter((i) =>
-        i.size.toLowerCase().includes(selectedSize.toLowerCase())
-      );
     }
 
     if (selectedCondition) {
@@ -501,7 +507,6 @@ export default function ShopPage() {
     items,
     activeCategory,
     activeAvailability,
-    selectedSize,
     selectedCondition,
     selectedStyle,
     selectedPriceRange,
@@ -615,35 +620,6 @@ export default function ShopPage() {
           {/* Second Row: Filter Dropdowns & Active Chips */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Size Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setOpenDropdown(openDropdown === "size" ? null : "size")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#dbc1b9]/60 bg-white text-xs font-medium text-[#231a11] hover:bg-[#f8e5d6]/40 transition-colors"
-                >
-                  <span>{selectedSize ? `Size: ${selectedSize}` : "Size"}</span>
-                  <span className="text-xs">▾</span>
-                </button>
-                {openDropdown === "size" && (
-                  <div className="absolute left-0 top-full mt-1.5 w-36 bg-white border border-[#dbc1b9]/40 rounded-xl shadow-lg p-2 z-50 space-y-1">
-                    {["XS", "S", "M", "L", "XL"].map((sz) => (
-                      <button
-                        key={sz}
-                        onClick={() => {
-                          setSelectedSize(selectedSize === sz ? "" : sz);
-                          setOpenDropdown(null);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium ${
-                          selectedSize === sz ? "bg-[#feeadc] text-[#974226]" : "hover:bg-[#fff8f5]"
-                        }`}
-                      >
-                        Size {sz}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Condition Dropdown */}
               <div className="relative">
                 <button
@@ -740,17 +716,6 @@ export default function ShopPage() {
 
               {/* Removable active filter chips */}
               <div className="flex items-center gap-2">
-                {selectedSize && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#ede1d2] text-[#201b12] text-xs font-medium">
-                    Size: {selectedSize}
-                    <button
-                      onClick={() => setSelectedSize("")}
-                      className="hover:text-[#974226] font-bold ml-0.5"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                )}
                 {selectedCondition && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#ede1d2] text-[#201b12] text-xs font-medium">
                     Condition: {selectedCondition}
@@ -796,55 +761,35 @@ export default function ShopPage() {
           </div>
         </section>
 
-        {/* SLIM "YOUR REPUTATION" STRIP */}
+        {/* SLIM PLATFORM TRUST & COMMERCE STRIP */}
         <section className="mb-8 w-full bg-[#fff1e8] border border-[#dbc1b9]/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-4">
-            {/* Circular Progress Ring (Score in Olive) */}
-            <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
-              <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-[#e9d7c8]"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                />
-                <path
-                  className="text-[#556138]"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeDasharray={`${Math.min(Math.max(buyerScore, 10), 100)}, 100`}
-                  strokeLinecap="round"
-                  strokeWidth="3"
-                />
-              </svg>
-              <span className="absolute font-label-md text-xs font-bold text-[#556138]">
-                {buyerScore}
-              </span>
+            <div className="w-12 h-12 rounded-2xl bg-[#feeadc] border border-[#dbc1b9]/40 flex-shrink-0 flex items-center justify-center text-[#974226]">
+              <span className="material-symbols-outlined text-2xl">verified_user</span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-label-md text-sm font-bold text-[#231a11]">
-                  Buyer Score — {buyerScore >= 50 ? "Eligible" : "Standard"}
+                  Mua sắm Thời trang Tuyển chọn &amp; Đấu giá Minh bạch
                 </h4>
-                <span className="inline-flex items-center gap-1 text-[11px] bg-[#dae9b5] text-[#151f01] font-semibold px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#556138]"></span> Verified Tier
+                <span className="inline-flex items-center gap-1 text-[11px] bg-[#dae9b5] text-[#151f01] font-semibold px-2.5 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#556138]"></span>
+                  100% Escrow Bảo đảm
                 </span>
               </div>
               <p className="font-body-md text-xs text-[#55433d] mt-0.5">
-                Your trusted status grants priority 15-minute escrow hold privileges on live drops.
+                Đồ thường mua ngay dễ dàng qua Giỏ hàng. Đồ hiếm được người bán mở đấu giá để bạn trả giá tự do theo giá trị mong muốn.
               </p>
             </div>
           </div>
 
           <Link
-            href="/profile"
-            className="font-label-md text-xs text-[#974226] font-semibold hover:underline inline-flex items-center gap-1 flex-shrink-0 self-end sm:self-center"
+            href="/auctions"
+            className="px-4 py-2 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all inline-flex items-center gap-1.5 flex-shrink-0 self-end sm:self-center shadow-xs active:scale-95"
           >
-            <span>View profile</span>
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <span className="material-symbols-outlined text-[16px]">gavel</span>
+            <span>Khám phá Live Auctions</span>
           </Link>
         </section>
 
@@ -855,7 +800,7 @@ export default function ShopPage() {
               key={item.id}
               item={item}
               onToggleWishlist={() => toggleWishlist(item)}
-              onHold={() => handleHoldAction(item)}
+              onAddToCart={() => handleAddToCart(item)}
               onActionClick={handleActionClick}
             />
           ))}
@@ -915,7 +860,7 @@ export default function ShopPage() {
                 key={item.id}
                 item={item}
                 onToggleWishlist={() => toggleWishlist(item)}
-                onHold={() => handleHoldAction(item)}
+                onAddToCart={() => handleAddToCart(item)}
                 onActionClick={handleActionClick}
               />
             ))}
@@ -955,12 +900,12 @@ export default function ShopPage() {
 function ProductCard({
   item,
   onToggleWishlist,
-  onHold,
+  onAddToCart,
   onActionClick,
 }: {
   item: ShopItem;
   onToggleWishlist: () => void;
-  onHold: () => void;
+  onAddToCart: () => void;
   onActionClick: (type: string) => void;
 }) {
   const isSold = item.badge === "sold";
@@ -1050,51 +995,62 @@ function ProductCard({
 
         {/* Slide-up Action Bar on Hover */}
         <div className="absolute inset-x-3 bottom-3 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20">
-          {isHeld ? (
-            <button
-              disabled
-              className="w-full py-2.5 bg-[#655d52] text-white rounded-full font-label-md text-xs font-semibold shadow-md opacity-90 cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-base">lock_clock</span>
-              <span>Currently in Escrow</span>
-            </button>
-          ) : isAuction ? (
+          {isAuction ? (
             <Link
               href={item.apiId ? `/products/${item.apiId}` : "/auctions"}
-              className="w-full py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#b65a3c] flex items-center justify-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full py-2.5 bg-[#4a2e63] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#5e3b7d] transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <span className="material-symbols-outlined text-base">gavel</span>
-              <span>Place Bid</span>
+              <span>Tham gia Đấu giá</span>
             </Link>
+          ) : isSold ? (
+            <button
+              disabled
+              className="w-full py-2.5 bg-[#655d52]/70 text-white rounded-full font-label-md text-xs font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <span>Đã bán hết</span>
+            </button>
           ) : isUpcoming ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onActionClick("reminder");
               }}
-              className="w-full py-2.5 bg-[#556138] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#6d7a4f] flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-[#556138] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#6d7a4f] transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <span className="material-symbols-outlined text-base">notifications_active</span>
-              <span>Notify Drop</span>
+              <span>Nhắc nhở mở bán</span>
             </button>
-          ) : isSold ? (
+          ) : isHeld ? (
             <button
               disabled
-              className="w-full py-2.5 bg-[#655d52]/70 text-white rounded-full font-label-md text-xs font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-[#655d52] text-white rounded-full font-label-md text-xs font-semibold shadow-md opacity-90 cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <span>Sold Out</span>
+              <span className="material-symbols-outlined text-base">lock_clock</span>
+              <span>Đang trong Escrow</span>
             </button>
           ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onHold();
-              }}
-              className="w-full py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#b65a3c] flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-base">timer</span>
-              <span>Hold Item (15m)</span>
-            </button>
+            <div className="flex items-center gap-2 w-full">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToCart();
+                }}
+                className="flex-1 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#b65a3c] transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[17px]">shopping_bag</span>
+                <span>Thêm vào giỏ</span>
+              </button>
+              <Link
+                href={productUrl}
+                onClick={(e) => e.stopPropagation()}
+                className="px-3.5 py-2.5 bg-white/95 text-[#231a11] hover:bg-white hover:text-[#974226] rounded-full font-label-md text-xs font-semibold shadow-md transition-all flex items-center justify-center"
+                title="Xem chi tiết &amp; Mua ngay"
+              >
+                <span className="material-symbols-outlined text-[17px]">visibility</span>
+              </Link>
+            </div>
           )}
         </div>
       </div>
