@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Navbar from "../../components/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import {
   ApiError,
@@ -175,31 +174,28 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
-        <main className="max-w-[1280px] mx-auto px-5 md:px-12">
-          {!isSeller ? (
-            <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 text-center max-w-[620px] mx-auto">
-              <div className="w-16 h-16 rounded-full bg-[#f2dfd1] flex items-center justify-center mx-auto mb-5">
-                <span className="material-symbols-outlined text-[30px] text-[#974226]">hourglass_empty</span>
-              </div>
-              <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-semibold text-[#231a11] mb-3">
-                Seller dashboard is locked
-              </h1>
-              <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
-                You can only access selling tools after your seller profile is approved by admin.
-              </p>
-              <Link
-                href={sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION" || sellerStatus === "REJECTED" || sellerStatus === "SUSPENDED" ? "/profile/become-seller/status" : "/profile/become-seller"}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                {sellerStatus === "NONE" ? "Apply to become seller" : "View seller status"}
-              </Link>
-            </div>
-          ) : (
-            <>
+    <div className="w-full">
+      {!isSeller ? (
+        <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 text-center max-w-[620px] mx-auto mt-8">
+          <div className="w-16 h-16 rounded-full bg-[#f2dfd1] flex items-center justify-center mx-auto mb-5">
+            <span className="material-symbols-outlined text-[30px] text-[#974226]">hourglass_empty</span>
+          </div>
+          <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-semibold text-[#231a11] mb-3">
+            Seller dashboard is locked
+          </h1>
+          <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
+            You can only access selling tools after your seller profile is approved by admin.
+          </p>
+          <Link
+            href={sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION" || sellerStatus === "REJECTED" || sellerStatus === "SUSPENDED" ? "/profile/become-seller/status" : "/profile/become-seller"}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            {sellerStatus === "NONE" ? "Apply to become seller" : "View seller status"}
+          </Link>
+        </div>
+      ) : (
+        <>
           <div className="mb-10 opacity-0 animate-fade-in-up">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-[#974226] flex items-center justify-center">
@@ -360,12 +356,8 @@ export default function SellerDashboard() {
               ← Back to Profile
             </Link>
           </div>
-            </>
-          )}
-        </main>
-      </div>
-    </>
+        </>
+      )}
+    </div>
   );
 }
-
-

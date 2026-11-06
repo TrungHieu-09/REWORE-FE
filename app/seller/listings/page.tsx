@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates";
 import { PillButton } from "../../components/admin/PillButton";
 import { productStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
-import Navbar from "../../components/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiAssetUrl, productsApi, type Product, type ProductStatus } from "../../lib/api";
 import { formatShortDate, formatVnd, normalizedStatusLabel } from "../../admin/_utils";
@@ -129,7 +128,6 @@ export default function SellerListingsPage() {
 
   return (
     <>
-      <Navbar />
       <div className="seller-create-root">
         {toast && <div className="admin-toast">{toast}</div>}
         <main className="seller-create-layout">

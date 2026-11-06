@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import Navbar from "../../../components/Navbar";
 import { LoadingSkeleton } from "../../../components/admin/AdminStates";
 import { PillButton } from "../../../components/admin/PillButton";
 import { useAuth } from "../../../context/AuthContext";
@@ -199,9 +198,7 @@ export default function NewSellerAuctionPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="seller-create-root">
+    <div className="seller-create-root">
         {toast && <div className="admin-toast">{toast}</div>}
         <main className="seller-create-layout">
           {!isLoading && !isSeller ? (
@@ -299,6 +296,5 @@ export default function NewSellerAuctionPage() {
           )}
         </main>
       </div>
-    </>
   );
 }

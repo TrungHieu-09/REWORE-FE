@@ -25,7 +25,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const signedInUser = await login(email, password);
-      router.push(signedInUser.role === "ADMIN" ? "/admin" : "/shop");
+      if (signedInUser.role === "ADMIN") {
+        router.push("/admin");
+      } else if (signedInUser.role === "SELLER") {
+        router.push("/seller/dashboard");
+      } else {
+        router.push("/shop");
+      }
     } catch (err) {
       if (err instanceof ApiError && err.requiresOtp) {
         const otpEmail = err.email ?? email.trim();

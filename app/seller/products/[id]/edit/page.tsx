@@ -6,7 +6,6 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { LoadingSkeleton } from "../../../../components/admin/AdminStates";
 import { PillButton } from "../../../../components/admin/PillButton";
 import { StatusBadge } from "../../../../components/admin/StatusBadge";
-import Navbar from "../../../../components/Navbar";
 import { useAuth } from "../../../../context/AuthContext";
 import { ApiError, apiAssetUrl, productsApi, type ProductCondition } from "../../../../lib/api";
 
@@ -299,9 +298,7 @@ export default function EditSellerProductPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="seller-create-root">
+    <div className="seller-create-root">
         {toast && <div className="admin-toast">{toast}</div>}
         <main className="seller-create-layout">
           {!isLoading && !isSeller ? (
@@ -497,6 +494,5 @@ export default function EditSellerProductPage() {
           )}
         </main>
       </div>
-    </>
   );
 }

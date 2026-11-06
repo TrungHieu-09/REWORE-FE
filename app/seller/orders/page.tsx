@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Navbar from "../../components/Navbar";
 import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates";
 import { StatusBadge, orderStatusTone } from "../../components/admin/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
@@ -63,9 +62,7 @@ export default function SellerOrdersPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="seller-create-root">
+    <div className="seller-create-root">
         <main className="seller-create-layout">
           {!isLoading && !isSeller ? (
             <section className="seller-create-locked">
@@ -144,6 +141,5 @@ export default function SellerOrdersPage() {
           )}
         </main>
       </div>
-    </>
   );
 }
