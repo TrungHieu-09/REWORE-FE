@@ -69,7 +69,7 @@ export default function SellerOrdersPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller orders locked</h1>
               <p>Bạn cần được duyệt seller trước khi quản lý đơn hàng.</p>
-              <Link href="/profile/become-seller/status">Xem trạng thái seller</Link>
+              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
             </section>
           ) : (
             <div className="seller-listings-page">

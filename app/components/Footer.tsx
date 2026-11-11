@@ -40,7 +40,7 @@ export default function Footer() {
             Curated Drops
           </Link>
           <Link
-            href="/profile/become-seller"
+            href="/sell-with-us"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
             Sell with Us

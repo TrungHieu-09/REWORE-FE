@@ -286,7 +286,6 @@ export type SellerApplication = {
   bankName: string | null;
   bankAccountNumber: string;
   bankAccountHolder?: string;
-  bankAccountName?: string;
   vietQr?: string | null;
   sellingDescription?: string | null;
   acceptedSellerTerms?: boolean;
@@ -305,27 +304,13 @@ export type SellerApplication = {
   updatedAt: string;
 };
 
-export type CreateSellerApplicationPayload = {
-  shopName: string;
-  legalName: string;
-  idCardFrontImage: File;
-  idCardBackImage: File;
-  selfieImage?: File | null;
-  phone: string;
-  pickupAddress: string;
-  bankName?: string;
-  bankAccountNumber: string;
-  bankAccountHolder: string;
-  vietQr?: string;
-  sellingDescription?: string;
-  acceptedSellerTerms: true;
-};
-
-export type SellerApplicationResponse = {
-  success: true;
-  message?: string;
-  sellerStatus: SellerStatus | SellerApplicationStatus;
-  application: SellerApplication;
+export type CreateSellerPayload = {
+  email: string;
+  name: string;
+  password?: string;
+  phone?: string;
+  shopName?: string;
+  note?: string;
 };
 
 export type SellerSubscriptionRequest = {
@@ -650,6 +635,24 @@ export const authApi = {
       method: "POST",
       auth: true,
     }),
+  forgotPassword: (payload: { email: string }) =>
+    apiRequest<{ success: true; message: string; expiresInMinutes?: number; resendCooldownSeconds?: number }>(
+      "/api/auth/forgot-password",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    ),
+  verifyResetOtp: (payload: { email: string; otp: string }) =>
+    apiRequest<{ success: true; resetToken: string }>("/api/auth/verify-reset-otp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (payload: { token: string; password: string }) =>
+    apiRequest<{ success: true; message: string }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const usersApi = {
@@ -830,10 +833,6 @@ export const reportsApi = {
 };
 
 export const sellerApi = {
-  currentApplication: () =>
-    apiRequest<SellerApplicationResponse>("/api/seller/application", {
-      auth: true,
-    }),
   subscription: () =>
     apiRequest<ApiItemResponse<SellerSubscriptionSummary>>("/api/seller/subscription", {
       auth: true,
@@ -857,28 +856,6 @@ export const sellerApi = {
       "/api/seller/auction-eligibility",
       { auth: true }
     ),
-  submitApplication: (payload: CreateSellerApplicationPayload) => {
-    const formData = new FormData();
-    formData.append("shopName", payload.shopName);
-    formData.append("legalName", payload.legalName);
-    formData.append("idCardFrontImage", payload.idCardFrontImage);
-    formData.append("idCardBackImage", payload.idCardBackImage);
-    if (payload.selfieImage) formData.append("selfieImage", payload.selfieImage);
-    formData.append("phone", payload.phone);
-    formData.append("pickupAddress", payload.pickupAddress);
-    if (payload.bankName) formData.append("bankName", payload.bankName);
-    formData.append("bankAccountNumber", payload.bankAccountNumber);
-    formData.append("bankAccountHolder", payload.bankAccountHolder);
-    if (payload.vietQr) formData.append("vietQr", payload.vietQr);
-    if (payload.sellingDescription) formData.append("sellingDescription", payload.sellingDescription);
-    formData.append("acceptedSellerTerms", String(payload.acceptedSellerTerms));
-
-    return apiRequest<SellerApplicationResponse>("/api/seller/application", {
-      method: "POST",
-      auth: true,
-      body: formData,
-    });
-  },
 };
 
 export const adminApi = {
@@ -895,24 +872,15 @@ export const adminApi = {
       `/api/admin/sellers/${id}`,
       { auth: true }
     ),
-  approveSellerApplication: (id: string) =>
+  createSeller: (payload: CreateSellerPayload) =>
     apiRequest<{
       success: true;
       message: string;
       data: SellerApplication;
-    }>(`/api/admin/sellers/${id}/approve`, {
+    }>("/api/admin/sellers", {
       method: "POST",
       auth: true,
-    }),
-  rejectSellerApplication: (id: string, reason: string) =>
-    apiRequest<{
-      success: true;
-      message: string;
-      data: SellerApplication;
-    }>(`/api/admin/sellers/${id}/reject`, {
-      method: "POST",
-      auth: true,
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify(payload),
     }),
   updateSellerSubscription: (
     id: string,

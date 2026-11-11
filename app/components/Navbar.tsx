@@ -28,20 +28,13 @@ export default function Navbar() {
   const authReady = !isLoading;
   const authed = authReady && isLoggedIn;
   const isAdmin = authReady && user?.role === "ADMIN";
-  const hasSellerApplication = ["pending", "rejected", "suspended"].includes(
-    sellerState.verificationStatus
-  );
 
   const sellHref = sellerState.isSeller
     ? "/seller/dashboard"
-    : hasSellerApplication
-    ? "/profile/become-seller/status"
-    : "/profile/become-seller";
+    : "/sell-with-us";
 
   const sellLabel = sellerState.isSeller
     ? "My Shop"
-    : hasSellerApplication
-    ? "Seller Status"
     : "Sell";
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -125,7 +118,7 @@ export default function Navbar() {
                 <Link
                   href={sellHref}
                   className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
-                    isActive("/profile/become-seller") || isActive("/seller")
+                    isActive("/sell-with-us") || isActive("/seller")
                       ? "text-[#974226] border-b-2 border-[#974226]"
                       : "text-[#55433d] hover:text-[#231a11]"
                   }`}

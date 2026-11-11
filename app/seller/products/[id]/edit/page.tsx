@@ -306,7 +306,7 @@ export default function EditSellerProductPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller tools are locked</h1>
               <p>Bạn cần được duyệt seller trước khi sửa sản phẩm.</p>
-              <Link href="/profile/become-seller/status">Xem trạng thái seller</Link>
+              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
             </section>
           ) : pageLoading ? (
             <LoadingSkeleton rows={4} />

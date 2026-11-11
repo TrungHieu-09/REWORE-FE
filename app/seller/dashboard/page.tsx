@@ -184,14 +184,14 @@ export default function SellerDashboard() {
             Seller dashboard is locked
           </h1>
           <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
-            You can only access selling tools after your seller profile is approved by admin.
+            Tài khoản người bán do admin cấp. Hãy liên hệ để được kích hoạt.
           </p>
           <Link
-            href={sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION" || sellerStatus === "REJECTED" || sellerStatus === "SUSPENDED" ? "/profile/become-seller/status" : "/profile/become-seller"}
+            href="/sell-with-us"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            {sellerStatus === "NONE" ? "Apply to become seller" : "View seller status"}
+            Liên hệ để được cấp tài khoản
           </Link>
         </div>
       ) : (

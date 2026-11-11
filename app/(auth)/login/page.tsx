@@ -147,7 +147,12 @@ export default function LoginPage() {
                 <input type="checkbox" className="auth-checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 <span>Remember me</span>
               </label>
-              <a href="#" className="auth-forgot">Forgot password?</a>
+              <Link
+                href={email.trim() ? `/forgot-password?email=${encodeURIComponent(email.trim())}` : "/forgot-password"}
+                className="auth-forgot"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             {/* Error */}
