@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { shopInitials, useSellerShop } from "./SellerShopProvider";
 
 export default function SellerTopBar() {
+  const { profile, stats } = useSellerShop();
+  const shopName = profile?.shopName ?? "Cửa hàng của tôi";
+  const planLabel = profile?.subscriptionPlan === "PREMIUM" ? "Premium" : "Free";
+  const pendingOrders = stats?.orders.byStatus.PENDING ?? 0;
+
   return (
     <header className="sticky top-0 z-40 bg-[#fff8f5] border-b border-[#dbc1b9]/30 flex justify-between items-center h-16 px-6">
       {/* Left: Search */}
@@ -20,14 +26,14 @@ export default function SellerTopBar() {
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <button
+        <Link
+          href="/seller/orders"
           className="relative p-2.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all text-[#55433d] hover:text-[#231a11]"
-          title="Notifications"
-          onClick={() => alert("You have 4 notifications pending your review.")}
+          title={pendingOrders > 0 ? `${pendingOrders} đơn đang chờ xử lý` : "Không có đơn chờ xử lý"}
         >
           <span className="material-symbols-outlined text-[20px]">notifications</span>
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#974226]" />
-        </button>
+          {pendingOrders > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#974226]" />}
+        </Link>
 
         {/* Messages */}
         <Link
@@ -36,9 +42,6 @@ export default function SellerTopBar() {
           title="Messages"
         >
           <span className="material-symbols-outlined text-[20px]">chat</span>
-          <span className="absolute -top-0.5 -right-0.5 bg-[#974226] text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
-            3
-          </span>
         </Link>
 
         <div className="h-6 w-px bg-[#dbc1b9]/40 mx-1" />
@@ -49,11 +52,11 @@ export default function SellerTopBar() {
           className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all"
         >
           <div className="w-8 h-8 rounded-full bg-[#ffdbd0] border border-[#dbc1b9] flex items-center justify-center text-[#974226] font-bold text-xs">
-            OS
+            {shopInitials(shopName)}
           </div>
           <div className="text-left hidden sm:block">
-            <span className="block text-[13px] font-bold text-[#231a11] leading-tight">My Store</span>
-            <span className="block text-[11px] text-[#88726c] leading-tight">Consignment Pro</span>
+            <span className="block text-[13px] font-bold text-[#231a11] leading-tight">{shopName}</span>
+            <span className="block text-[11px] text-[#88726c] leading-tight">{planLabel}</span>
           </div>
           <span className="material-symbols-outlined text-[#88726c] text-[18px]">expand_more</span>
         </Link>

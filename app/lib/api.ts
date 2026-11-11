@@ -304,6 +304,31 @@ export type SellerApplication = {
   updatedAt: string;
 };
 
+export type SellerShopProfile = {
+  id: string;
+  shopName: string;
+  pickupAddress: string;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  status: SellerApplicationStatus;
+  subscriptionPlan: SellerSubscriptionPlan;
+  subscriptionExpiresAt: string | null;
+  user: { id: string; name: string; avatar: string | null; bio: string | null };
+  canEdit: boolean;
+};
+
+export type UpdateSellerShopPayload = Partial<
+  Pick<SellerShopProfile, "shopName" | "pickupAddress" | "bankName" | "bankAccountName" | "bankAccountNumber">
+> & { bio?: string | null };
+
+export type SellerStats = {
+  products: { total: number; byStatus: Record<string, number> };
+  orders: { total: number; byStatus: Record<string, number> };
+  revenue: { total: number; thisMonth: number };
+  liveAuctions: number;
+};
+
 export type CreateSellerPayload = {
   email: string;
   name: string;
@@ -833,6 +858,15 @@ export const reportsApi = {
 };
 
 export const sellerApi = {
+  shopProfile: () =>
+    apiRequest<ApiItemResponse<SellerShopProfile>>("/api/seller/profile", { auth: true }),
+  updateShopProfile: (payload: UpdateSellerShopPayload) =>
+    apiRequest<ApiItemResponse<SellerShopProfile> & { message: string }>("/api/seller/profile", {
+      method: "PUT",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
+  stats: () => apiRequest<ApiItemResponse<SellerStats>>("/api/seller/stats", { auth: true }),
   subscription: () =>
     apiRequest<ApiItemResponse<SellerSubscriptionSummary>>("/api/seller/subscription", {
       auth: true,

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { shopInitials, useSellerShop } from "./SellerShopProvider";
 
 const navItems = [
   { icon: "dashboard", label: "Dashboard", href: "/seller/dashboard" },
-  { icon: "shopping_bag", label: "Orders", href: "/seller/orders", badge: "4", badgeStyle: "count" },
+  { icon: "shopping_bag", label: "Orders", href: "/seller/orders", key: "orders" },
   { icon: "inventory_2", label: "Inventory", href: "/seller/inventory" },
-  { icon: "auto_awesome", label: "Drops", href: "/seller/drops", badge: "Live", badgeStyle: "live" },
-  { icon: "gavel", label: "Auctions", href: "/seller/auctions", badge: "●", badgeStyle: "dot" },
-  { icon: "book_online", label: "Reservations", href: "/seller/reservations", badge: "6", badgeStyle: "count" },
+  { icon: "auto_awesome", label: "Drops", href: "/seller/drops" },
+  { icon: "gavel", label: "Auctions", href: "/seller/auctions", key: "auctions" },
+  { icon: "book_online", label: "Reservations", href: "/seller/reservations" },
   { icon: "description", label: "Reports", href: "/seller/reports" },
   { icon: "query_stats", label: "Analytics", href: "/seller/analytics" },
   { icon: "settings", label: "Settings", href: "/seller/settings" },
@@ -17,6 +18,13 @@ const navItems = [
 
 export default function SellerSidebar() {
   const pathname = usePathname();
+  const { profile, stats } = useSellerShop();
+  const shopName = profile?.shopName ?? "Cửa hàng của tôi";
+  const isApproved = !profile || profile.status === "APPROVED";
+  const counts: Record<string, number> = {
+    orders: stats?.orders.byStatus.PENDING ?? 0,
+    auctions: stats?.liveAuctions ?? 0,
+  };
 
   return (
     <aside className="w-64 h-screen fixed left-0 top-0 bg-[#fff1e8] border-r border-[#dbc1b9]/30 shadow-sm z-50 flex flex-col justify-between">
@@ -39,16 +47,16 @@ export default function SellerSidebar() {
         {/* Seller Profile Snippet */}
         <div className="px-5 py-4 mx-3 my-3 bg-[#ede1d2]/40 rounded-xl flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#f2dfd1] border border-[#dbc1b9]/40 flex items-center justify-center text-[#974226] font-bold text-sm">
-            OS
+            {shopInitials(shopName)}
           </div>
           <div className="overflow-hidden">
             <div className="flex items-center gap-1">
-              <span className="text-[13px] font-bold text-[#231a11] truncate">My Store</span>
+              <span className="text-[13px] font-bold text-[#231a11] truncate">{shopName}</span>
               <span className="material-symbols-outlined text-[#974226] text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
             </div>
             <span className="text-[11px] font-semibold text-[#556138] flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#556138] inline-block" />
-              Verified Merchant
+              {isApproved ? "Verified Merchant" : "Chờ kích hoạt"}
             </span>
           </div>
         </div>
@@ -85,17 +93,9 @@ export default function SellerSidebar() {
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
-                {item.badge && item.badgeStyle === "live" && (
-                  <span className="ml-auto text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#feeadc] text-[#974226]">
-                    Live
-                  </span>
-                )}
-                {item.badge && item.badgeStyle === "dot" && (
-                  <span className="ml-auto w-2 h-2 rounded-full bg-[#974226] animate-pulse" />
-                )}
-                {item.badge && item.badgeStyle === "count" && (
+                {item.key && counts[item.key] > 0 && (
                   <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-[#ede1d2] text-[#6b6357] font-semibold">
-                    {item.badge}
+                    {counts[item.key]}
                   </span>
                 )}
               </Link>
@@ -109,8 +109,8 @@ export default function SellerSidebar() {
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[12px] font-medium text-[#55433d]">Store Status</span>
           <span className="flex items-center gap-1.5 text-xs font-semibold text-[#556138]">
-            <span className="w-2 h-2 rounded-full bg-[#556138]" />
-            Live
+            <span className={`w-2 h-2 rounded-full ${isApproved ? "bg-[#556138]" : "bg-[#ba1a1a]"}`} />
+            {isApproved ? "Live" : "Tạm dừng"}
           </span>
         </div>
         <Link

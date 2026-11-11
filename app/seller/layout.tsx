@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SellerSidebar from "../components/seller/SellerSidebar";
 import SellerTopBar from "../components/seller/SellerTopBar";
 import SellerGuard from "../components/SellerGuard";
+import { SellerShopProvider } from "../components/seller/SellerShopProvider";
 
 export const metadata: Metadata = {
   title: "REWORE — Shop Owner Console",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   return (
     <SellerGuard>
+      <SellerShopProvider>
       <div
         className="min-h-screen bg-[#fff8f5] text-[#231a11] antialiased flex"
         style={{ backgroundImage: "radial-gradient(rgba(35, 26, 17, 0.04) 1px, transparent 0)", backgroundSize: "24px 24px" }}
@@ -26,6 +28,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
           </main>
         </div>
       </div>
+      </SellerShopProvider>
     </SellerGuard>
   );
 }
