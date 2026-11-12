@@ -49,6 +49,19 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const markPayout = async (order: Order) => {
+    if (!window.confirm("Xác nhận đã chuyển khoản phần tiền cho seller của đơn này?")) return;
+    setBusyId(order.id);
+    try {
+      const res = await adminApi.payoutOrder(order.id);
+      setOrders((items) => items.map((item) => (item.id === order.id ? res.data : item)));
+    } catch (err) {
+      setApiMessage(err instanceof ApiError ? err.message : "Không thể ghi nhận chuyển tiền.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   const columns = useMemo<DataColumn<Order>[]>(
     () => [
       {
@@ -91,7 +104,16 @@ export default function AdminOrdersPage() {
       {
         key: "amount",
         header: "Tổng tiền",
-        render: (order) => <span className="sp-price text-[22px]">{formatVnd(order.totalPrice)}</span>,
+        render: (order) => (
+          <div>
+            <span className="sp-price text-[22px]">{formatVnd(order.totalPrice)}</span>
+            {order.platformFeeAmount != null && order.sellerPayoutAmount != null && (
+              <p className="text-[12px] text-[#88726c]">
+                Phí sàn {order.platformFeeRate}%: {formatVnd(order.platformFeeAmount)} · Seller nhận {formatVnd(order.sellerPayoutAmount)}
+              </p>
+            )}
+          </div>
+        ),
       },
       {
         key: "status",
@@ -106,14 +128,25 @@ export default function AdminOrdersPage() {
       {
         key: "action",
         header: "Thao tác",
-        render: (order) =>
-          (order.paymentStatus ?? "UNPAID") === "UNPAID" ? (
-            <PillButton tone="green" disabled={busyId === order.id} onClick={() => markPaid(order)}>
-              Xác nhận đã thanh toán
-            </PillButton>
-          ) : (
-            <span className="text-[12px] font-semibold text-[#88726c]">No action</span>
-          ),
+        render: (order) => {
+          if ((order.paymentStatus ?? "UNPAID") === "UNPAID") {
+            return (
+              <PillButton tone="green" disabled={busyId === order.id} onClick={() => markPaid(order)}>
+                Xác nhận đã thanh toán
+              </PillButton>
+            );
+          }
+          if (order.status === "COMPLETED" && order.paymentStatus === "PAID") {
+            return order.payoutPaidAt ? (
+              <span className="text-[12px] font-semibold text-[#556138]">Đã chuyển tiền cho seller</span>
+            ) : (
+              <PillButton tone="green" disabled={busyId === order.id} onClick={() => markPayout(order)}>
+                Đã chuyển tiền cho seller
+              </PillButton>
+            );
+          }
+          return <span className="text-[12px] font-semibold text-[#88726c]">No action</span>;
+        },
       },
     ],
     [busyId]
@@ -124,7 +157,7 @@ export default function AdminOrdersPage() {
       <header className="admin-page-head">
         <div>
           <h1 className="admin-page-title">Đơn hàng</h1>
-          <p className="admin-page-sub">Theo dõi thanh toán, buyer/seller và xác nhận đơn unpaid.</p>
+          <p className="admin-page-sub">Xác nhận thanh toán của buyer, sau đó chuyển tiền cho seller (đã trừ phí sàn) khi đơn hoàn tất.</p>
           {apiMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{apiMessage}</p>}
         </div>
         <span className="sp-count-badge">{orders.length} đơn</span>

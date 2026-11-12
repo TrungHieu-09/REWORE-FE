@@ -8,11 +8,8 @@ const navItems = [
   { icon: "dashboard", label: "Dashboard", href: "/seller/dashboard" },
   { icon: "shopping_bag", label: "Orders", href: "/seller/orders", key: "orders" },
   { icon: "inventory_2", label: "Inventory", href: "/seller/inventory" },
-  { icon: "auto_awesome", label: "Drops", href: "/seller/drops" },
   { icon: "gavel", label: "Auctions", href: "/seller/auctions", key: "auctions" },
-  { icon: "book_online", label: "Reservations", href: "/seller/reservations" },
   { icon: "description", label: "Reports", href: "/seller/reports" },
-  { icon: "query_stats", label: "Analytics", href: "/seller/analytics" },
   { icon: "settings", label: "Settings", href: "/seller/settings" },
 ];
 
@@ -64,7 +61,7 @@ export default function SellerSidebar() {
         {/* CTA Button */}
         <div className="px-4 mb-2">
           <Link
-            href="/seller/inventory/new"
+            href="/seller/products/new"
             className="w-full bg-[#974226] hover:bg-[#b65a3c] text-white text-[13px] font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all duration-150"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>

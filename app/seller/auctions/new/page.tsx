@@ -9,8 +9,7 @@ import {
   ApiError,
   auctionsApi,
   productsApi,
-  sellerApi,
-  type AuctionEligibility,
+
   type Product,
 } from "../../../lib/api";
 
@@ -32,9 +31,6 @@ const emptyForm: AuctionForm = {
   endTime: "",
 };
 
-const normalizeEligibility = (response: AuctionEligibility | { data: AuctionEligibility }) =>
-  "data" in response ? response.data : response;
-
 const digitsOnly = (value: string) => value.replace(/[^\d]/g, "");
 const formatVndInput = (value: string) => {
   const digits = digitsOnly(value);
@@ -42,46 +38,12 @@ const formatVndInput = (value: string) => {
 };
 const parseMoney = (value: string) => Number(digitsOnly(value));
 const toIso = (value: string) => new Date(value).toISOString();
-const formatSubscriptionExpiry = (value?: string | null) =>
-  value ? new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value)) : "Không giới hạn";
-
-function EligibilityLockCard({ eligibility }: { eligibility: AuctionEligibility }) {
-  return (
-    <section className="admin-urgent-card seller-auction-lock-card">
-      <span className="admin-urgent-badge">
-        <span className="material-symbols-outlined text-[13px]">lock</span>
-        LOCKED
-      </span>
-      <h2 className="admin-urgent-title">Live Auctions chưa mở</h2>
-      <p className="seller-auction-lock-copy">
-        Bạn cần đăng ký gói {eligibility.requiredPlan} để tạo phòng Đấu giá. Gói hiện tại của bạn là {eligibility.currentPlan}.
-      </p>
-      <div className="seller-auction-lock-progress">
-        <div className="flex justify-between text-[12px] font-bold text-white/70 mb-2">
-          <span>Gói hiện tại: {eligibility.currentPlan}</span>
-          <span>Yêu cầu: {eligibility.requiredPlan}</span>
-        </div>
-        <div className="sp-rep-track seller-auction-dark-track">
-          <div className="sp-rep-fill" style={{ width: `${eligibility.subscriptionActive ? 100 : 35}%` }} />
-        </div>
-        <p className="mt-3 text-[12px] font-semibold text-white/70">
-          Premium hết hạn: {formatSubscriptionExpiry(eligibility.subscriptionExpiresAt)}
-        </p>
-      </div>
-      <Link href="/seller/dashboard" className="admin-pill admin-pill-dark w-fit">
-        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Về Seller Dashboard
-      </Link>
-    </section>
-  );
-}
 
 export default function NewSellerAuctionPage() {
   const { user, isLoading } = useAuth();
   const [form, setForm] = useState<AuctionForm>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [products, setProducts] = useState<Product[]>([]);
-  const [eligibility, setEligibility] = useState<AuctionEligibility | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -94,11 +56,6 @@ export default function NewSellerAuctionPage() {
     [products]
   );
 
-  const refetchEligibility = async () => {
-    const res = await sellerApi.auctionEligibility();
-    setEligibility(normalizeEligibility(res));
-  };
-
   useEffect(() => {
     if (isLoading || !user?.id || !isSeller) return;
 
@@ -107,18 +64,9 @@ export default function NewSellerAuctionPage() {
       setLoading(true);
       setMessage("");
 
-      Promise.allSettled([
-        sellerApi.auctionEligibility(),
-        productsApi.list({ sellerId: user.id, limit: 80, sortBy: "newest" }),
-      ])
-        .then(([eligibilityResult, productResult]) => {
+      Promise.allSettled([productsApi.list({ sellerId: user.id, limit: 80, sortBy: "newest" })])
+        .then(([productResult]) => {
           if (cancelled) return;
-
-          if (eligibilityResult.status === "fulfilled") {
-            setEligibility(normalizeEligibility(eligibilityResult.value));
-          } else {
-            setMessage(eligibilityResult.reason instanceof ApiError ? eligibilityResult.reason.message : "Không kiểm tra được điều kiện đấu giá.");
-          }
 
           if (productResult.status === "fulfilled") {
             setProducts(productResult.value.data);
@@ -185,13 +133,6 @@ export default function NewSellerAuctionPage() {
       const errorMessage = err instanceof ApiError ? err.message : "Không thể tạo đấu giá.";
       setToast(errorMessage);
       setMessage(errorMessage);
-      if (err instanceof ApiError && err.status === 403) {
-        try {
-          await refetchEligibility();
-        } catch {
-          // Keep the API error already shown above.
-        }
-      }
     } finally {
       setSubmitting(false);
     }
@@ -206,12 +147,10 @@ export default function NewSellerAuctionPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller tools are locked</h1>
               <p>Bạn cần được duyệt seller trước khi tạo đấu giá.</p>
-              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
+              <Link href="/shop">Về cửa hàng</Link>
             </section>
           ) : loading ? (
             <LoadingSkeleton rows={4} />
-          ) : eligibility && !eligibility.eligible ? (
-            <EligibilityLockCard eligibility={eligibility} />
           ) : (
             <form className="seller-create-form" onSubmit={handleSubmit}>
               <header className="seller-create-head">

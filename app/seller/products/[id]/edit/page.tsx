@@ -284,7 +284,7 @@ export default function EditSellerProductPage() {
       });
 
       setToast("Đã cập nhật sản phẩm.");
-      window.setTimeout(() => router.push("/seller/listings"), 700);
+      window.setTimeout(() => router.push("/seller/inventory"), 700);
     } catch (err) {
       if (err instanceof ApiError) {
         applyApiFieldErrors(err.errors);
@@ -306,7 +306,7 @@ export default function EditSellerProductPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller tools are locked</h1>
               <p>Bạn cần được duyệt seller trước khi sửa sản phẩm.</p>
-              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
+              <Link href="/shop">Về cửa hàng</Link>
             </section>
           ) : pageLoading ? (
             <LoadingSkeleton rows={4} />
@@ -315,7 +315,7 @@ export default function EditSellerProductPage() {
               <span className="material-symbols-outlined">error</span>
               <h1>Không thể sửa sản phẩm</h1>
               <p>{loadError}</p>
-              <Link href="/seller/listings">Quay lại sản phẩm của tôi</Link>
+              <Link href="/seller/inventory">Quay lại sản phẩm của tôi</Link>
             </section>
           ) : (
             <form className="seller-create-form" onSubmit={handleSubmit}>
@@ -484,7 +484,7 @@ export default function EditSellerProductPage() {
               )}
 
               <footer className="seller-create-actions">
-                <Link href="/seller/listings">Huỷ</Link>
+                <Link href="/seller/inventory">Huỷ</Link>
                 <PillButton type="submit" tone="accent" className="seller-submit-button" disabled={submitting || isLoading}>
                   {submitting && <span className="seller-create-spinner" />}
                   {submitting ? "Đang lưu..." : "Lưu thay đổi"}

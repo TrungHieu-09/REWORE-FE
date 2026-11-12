@@ -57,7 +57,7 @@ export default function ReputationSidebar() {
             <span className="material-symbols-outlined text-[13px]">
               check_circle
             </span>
-            Eligible for premium bids
+            Eligible for bids
           </p>
         </div>
       </div>

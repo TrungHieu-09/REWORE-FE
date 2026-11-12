@@ -6,7 +6,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { PillButton } from "../../../components/admin/PillButton";
 import { StatusBadge } from "../../../components/admin/StatusBadge";
 import { useAuth } from "../../../context/AuthContext";
-import { ApiError, productsApi, type ProductCondition } from "../../../lib/api";
+import { ApiError, productsApi, sellerApi, type ProductCondition } from "../../../lib/api";
 
 type ProductForm = {
   title: string;
@@ -106,6 +106,15 @@ export default function NewSellerProductPage() {
   const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
   const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
 
+  const [feeRate, setFeeRate] = useState(5);
+
+  useEffect(() => {
+    sellerApi
+      .stats()
+      .then((res) => setFeeRate(res.data.platformFees.rate))
+      .catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     if (user?.role === "ADMIN") router.replace("/admin");
   }, [router, user?.role]);
@@ -201,7 +210,7 @@ export default function NewSellerProductPage() {
       });
 
       setToast("Đã đăng sản phẩm thành công.");
-      window.setTimeout(() => router.push("/seller/listings"), 700);
+      window.setTimeout(() => router.push("/seller/inventory"), 700);
     } catch (err) {
       if (err instanceof ApiError) {
         applyApiFieldErrors(err.errors);
@@ -223,7 +232,7 @@ export default function NewSellerProductPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller tools are locked</h1>
               <p>Bạn cần được duyệt seller trước khi đăng bán sản phẩm.</p>
-              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
+              <Link href="/shop">Về cửa hàng</Link>
             </section>
           ) : (
             <form className="seller-create-form" onSubmit={handleSubmit}>
@@ -278,6 +287,11 @@ export default function NewSellerProductPage() {
                       placeholder="250.000"
                     />
                     {form.price && <em>{formatVndInput(form.price)} ₫</em>}
+                    {form.price && parsePrice(form.price) > 0 && (
+                      <em>
+                        Phí sàn {feeRate}% trừ vào tiền thanh toán khi đơn hoàn tất · Bạn nhận ≈ {formatVndInput(String(parsePrice(form.price) - Math.round((parsePrice(form.price) * feeRate) / 100)))} ₫
+                      </em>
+                    )}
                     {errors.price && <small>{errors.price}</small>}
                   </label>
 

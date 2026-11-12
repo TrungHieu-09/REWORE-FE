@@ -29,14 +29,6 @@ export default function Navbar() {
   const authed = authReady && isLoggedIn;
   const isAdmin = authReady && user?.role === "ADMIN";
 
-  const sellHref = sellerState.isSeller
-    ? "/seller/dashboard"
-    : "/sell-with-us";
-
-  const sellLabel = sellerState.isSeller
-    ? "My Shop"
-    : "Sell";
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -115,16 +107,18 @@ export default function Navbar() {
                 >
                   Live Auctions
                 </Link>
-                <Link
-                  href={sellHref}
-                  className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
-                    isActive("/sell-with-us") || isActive("/seller")
-                      ? "text-[#974226] border-b-2 border-[#974226]"
-                      : "text-[#55433d] hover:text-[#231a11]"
-                  }`}
-                >
-                  {sellLabel}
-                </Link>
+                {sellerState.isSeller && (
+                  <Link
+                    href="/seller/dashboard"
+                    className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
+                      isActive("/seller")
+                        ? "text-[#974226] border-b-2 border-[#974226]"
+                        : "text-[#55433d] hover:text-[#231a11]"
+                    }`}
+                  >
+                    My Shop
+                  </Link>
+                )}
                 <Link
                   href="/wishlist"
                   className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
@@ -167,12 +161,14 @@ export default function Navbar() {
             {authed ? (
               // Logged in: Sell button, icons, account menu
               <>
-                <Link
-                  href={sellHref}
-                  className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all active:scale-[0.98] shadow-sm"
-                >
-                  <span>{sellerState.isSeller ? "Seller Studio" : "Sell Item"}</span>
-                </Link>
+                {sellerState.isSeller && (
+                  <Link
+                    href="/seller/dashboard"
+                    className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all active:scale-[0.98] shadow-sm"
+                  >
+                    <span>Seller Studio</span>
+                  </Link>
+                )}
 
                 <div className="flex items-center gap-1 text-[#55433d]">
                   <Link
@@ -335,13 +331,15 @@ export default function Navbar() {
                 >
                   Live Auctions
                 </Link>
-                <Link
-                  href={sellHref}
-                  onClick={() => setMobileOpen(false)}
-                  className="block text-sm font-semibold py-1.5 text-[#974226]"
-                >
-                  {sellLabel}
-                </Link>
+                {sellerState.isSeller && (
+                  <Link
+                    href="/seller/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="block text-sm font-semibold py-1.5 text-[#974226]"
+                  >
+                    My Shop
+                  </Link>
+                )}
                 <Link
                   href="/wishlist"
                   onClick={() => setMobileOpen(false)}

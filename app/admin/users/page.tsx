@@ -9,6 +9,7 @@ import { DetailDrawer } from "../../components/admin/DetailDrawer";
 import { PillButton } from "../../components/admin/PillButton";
 import { roleTone, sellerStatusTone, StatusBadge, userStatusTone } from "../../components/admin/StatusBadge";
 import { useAdminBadges } from "../../components/admin/useAdminBadges";
+import AddUserPanel from "../../components/admin/AddUserPanel";
 import { adminApi, type Order, type Role, type SellerApplication, type User } from "../../lib/api";
 import { formatShortDate, formatVnd, initials, normalizedStatusLabel } from "../_utils";
 
@@ -70,6 +71,7 @@ export default function AdminUsersPage() {
   const [drawerMessage, setDrawerMessage] = useState("");
   const [toast, setToast] = useState("");
   const [apiMessage, setApiMessage] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const { pendingSellers, openReports } = useAdminBadges();
 
   useEffect(() => {
@@ -133,6 +135,24 @@ export default function AdminUsersPage() {
   const updateUser = (next: User) => {
     setUsers((items) => items.map((item) => (item.id === next.id ? { ...item, ...next } : item)));
     setSelected((current) => (current?.id === next.id ? { ...current, ...next } : current));
+  };
+
+  const changeRole = async (role: "BUYER" | "SELLER") => {
+    if (!selected) return;
+    const label = role === "SELLER" ? "cấp role Seller cho" : "thu hồi role Seller của";
+    if (!window.confirm(`Bạn chắc chắn muốn ${label} ${selected.email}?`)) return;
+
+    setBusyId(selected.id);
+    setDrawerMessage("");
+    try {
+      const res = await adminApi.changeUserRole(selected.id, { role });
+      updateUser({ ...selected, ...res.data });
+      setToast(role === "SELLER" ? "Đã cấp role Seller." : "Đã thu hồi role Seller.");
+    } catch (err) {
+      setDrawerMessage(err instanceof Error ? err.message : "Không thể đổi role.");
+    } finally {
+      setBusyId("");
+    }
   };
 
   const banUser = async () => {
@@ -212,8 +232,25 @@ export default function AdminUsersPage() {
           <p className="admin-page-sub">Tìm kiếm, kiểm tra role và xử lý tài khoản vi phạm.</p>
           {apiMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{apiMessage}</p>}
         </div>
-        <span className="sp-count-badge">{filteredUsers.length} user</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="sp-count-badge">{filteredUsers.length} user</span>
+          <PillButton tone="green" onClick={() => setAddOpen((value) => !value)}>
+            <span className="material-symbols-outlined text-[16px]">{addOpen ? "close" : "person_add"}</span>
+            {addOpen ? "Đóng" : "Thêm người dùng"}
+          </PillButton>
+        </div>
       </header>
+
+      {addOpen && (
+        <AddUserPanel
+          onCancel={() => setAddOpen(false)}
+          onCreated={(user, message) => {
+            setUsers((items) => [user, ...items.filter((item) => item.id !== user.id)]);
+            setAddOpen(false);
+            setToast(message);
+          }}
+        />
+      )}
 
       <section className="admin-panel admin-filter-bar">
         <label className="admin-search-wrap">
@@ -359,6 +396,19 @@ export default function AdminUsersPage() {
             </div>
 
             {drawerMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{drawerMessage}</p>}
+
+            {selected.role === "BUYER" && (
+              <PillButton tone="green" disabled={busyId === selected.id} onClick={() => changeRole("SELLER")}>
+                <span className="material-symbols-outlined text-[16px]">storefront</span>
+                Cấp role Seller
+              </PillButton>
+            )}
+            {selected.role === "SELLER" && (
+              <PillButton tone="red" disabled={busyId === selected.id} onClick={() => changeRole("BUYER")}>
+                <span className="material-symbols-outlined text-[16px]">person_off</span>
+                Thu hồi role Seller
+              </PillButton>
+            )}
 
             {selected.isBanned ? (
               <PillButton tone="green" disabled={busyId === selected.id} onClick={unbanUser}>

@@ -5,14 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates";
 import { StatusBadge } from "../../components/admin/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
-import { ApiError, auctionsApi, sellerApi, type Auction, type AuctionEligibility } from "../../lib/api";
+import { ApiError, auctionsApi, type Auction } from "../../lib/api";
 import { formatShortDate, formatVnd, normalizedStatusLabel } from "../../admin/_utils";
-
-const normalizeEligibility = (response: AuctionEligibility | { data: AuctionEligibility }) =>
-  "data" in response ? response.data : response;
-
-const formatSubscriptionExpiry = (value?: string | null) =>
-  value ? new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value)) : "Không giới hạn";
 
 const auctionTone = (status: Auction["status"]) => {
   if (status === "LIVE") return "red";
@@ -24,15 +18,12 @@ const auctionTone = (status: Auction["status"]) => {
 export default function SellerAuctionsPage() {
   const { user, isLoading } = useAuth();
   const [auctions, setAuctions] = useState<Auction[]>([]);
-  const [eligibility, setEligibility] = useState<AuctionEligibility | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
   const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
   const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
   const liveCount = useMemo(() => auctions.filter((auction) => auction.status === "LIVE").length, [auctions]);
-  const currentPlan = eligibility?.currentPlan ?? user?.sellerSubscriptionPlan ?? "FREE";
-  const premiumActive = eligibility?.subscriptionActive ?? currentPlan === "PREMIUM";
 
   useEffect(() => {
     if (isLoading || !user?.id || !isSeller) return;
@@ -42,24 +33,15 @@ export default function SellerAuctionsPage() {
       setLoading(true);
       setMessage("");
 
-      Promise.allSettled([
-        auctionsApi.list({ limit: 50 }),
-        sellerApi.auctionEligibility(),
-      ])
-        .then(([auctionResult, eligibilityResult]) => {
+      auctionsApi
+        .list({ limit: 50 })
+        .then((result) => {
           if (cancelled) return;
-
-          if (auctionResult.status === "fulfilled") {
-            setAuctions(auctionResult.value.data.filter((auction) => auction.sellerId === user.id));
-          }
-          if (eligibilityResult.status === "fulfilled") {
-            setEligibility(normalizeEligibility(eligibilityResult.value));
-          }
-
-          const firstError = [auctionResult, eligibilityResult].find((result) => result.status === "rejected");
-          if (firstError?.status === "rejected") {
-            setMessage(firstError.reason instanceof ApiError ? firstError.reason.message : "Không tải được dữ liệu đấu giá.");
-          }
+          setAuctions(result.data.filter((auction) => auction.sellerId === user.id));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setMessage(err instanceof ApiError ? err.message : "Không tải được dữ liệu đấu giá.");
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -80,7 +62,7 @@ export default function SellerAuctionsPage() {
             <span className="material-symbols-outlined">lock</span>
             <h1>Seller tools are locked</h1>
             <p>Bạn cần được duyệt seller trước khi quản lý đấu giá.</p>
-            <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
+            <Link href="/shop">Về cửa hàng</Link>
           </section>
         ) : (
           <div className="seller-listings-page">
@@ -91,7 +73,7 @@ export default function SellerAuctionsPage() {
                   Live Auctions
                 </div>
                 <h1>Đấu giá của shop</h1>
-                <p>Theo dõi phiên đấu giá đã tạo. Tạo đấu giá yêu cầu gói Premium đang active.</p>
+                <p>Theo dõi phiên đấu giá đã tạo. Chọn một sản phẩm đã đăng để mở phiên đấu giá.</p>
                 {message && <p className="seller-listing-error">{message}</p>}
               </div>
               <Link href="/seller/auctions/new" className="seller-add-listing">
@@ -109,25 +91,12 @@ export default function SellerAuctionsPage() {
                 <span>Đang live</span>
                 <strong>{liveCount}</strong>
               </article>
-              <article>
-                <span>Gói hiện tại</span>
-                <strong>{currentPlan}</strong>
-              </article>
-              <article>
-                <span>Premium</span>
-                <strong>{premiumActive ? "Active" : "Locked"}</strong>
-                {premiumActive && (
-                  <small className="block text-[11px] text-[#88726c] font-medium">
-                    {formatSubscriptionExpiry(eligibility?.subscriptionExpiresAt)}
-                  </small>
-                )}
-              </article>
             </section>
 
             {loading ? (
               <LoadingSkeleton rows={4} />
             ) : auctions.length === 0 ? (
-              <EmptyState icon="gavel" title="Chưa có đấu giá" desc="Tạo phiên đấu giá đầu tiên khi shop đang ở gói Premium." />
+              <EmptyState icon="gavel" title="Chưa có đấu giá" desc="Tạo phiên đấu giá đầu tiên từ một sản phẩm đã đăng." />
             ) : (
               <section className="seller-listing-list">
                 {auctions.map((auction) => (

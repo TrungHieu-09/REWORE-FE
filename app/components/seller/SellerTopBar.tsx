@@ -6,7 +6,7 @@ import { shopInitials, useSellerShop } from "./SellerShopProvider";
 export default function SellerTopBar() {
   const { profile, stats } = useSellerShop();
   const shopName = profile?.shopName ?? "Cửa hàng của tôi";
-  const planLabel = profile?.subscriptionPlan === "PREMIUM" ? "Premium" : "Free";
+  const feeLabel = `Phí sàn ${stats?.platformFees.rate ?? 5}%`;
   const pendingOrders = stats?.orders.byStatus.PENDING ?? 0;
 
   return (
@@ -56,7 +56,7 @@ export default function SellerTopBar() {
           </div>
           <div className="text-left hidden sm:block">
             <span className="block text-[13px] font-bold text-[#231a11] leading-tight">{shopName}</span>
-            <span className="block text-[11px] text-[#88726c] leading-tight">{planLabel}</span>
+            <span className="block text-[11px] text-[#88726c] leading-tight">{feeLabel}</span>
           </div>
           <span className="material-symbols-outlined text-[#88726c] text-[18px]">expand_more</span>
         </Link>

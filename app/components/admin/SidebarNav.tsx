@@ -13,8 +13,7 @@ type AdminNavItem = {
 
 const ITEMS: AdminNavItem[] = [
   { href: "/admin", icon: "space_dashboard", label: "Dashboard" },
-  { href: "/admin/sellers", icon: "verified_user", label: "Duyệt Seller", countKey: "pendingSellers" },
-  { href: "/admin/subscriptions", icon: "workspace_premium", label: "Gói Seller" },
+  { href: "/admin/sellers", icon: "verified_user", label: "Người bán", countKey: "pendingSellers" },
   { href: "/admin/users", icon: "group", label: "Người dùng" },
   { href: "/admin/products", icon: "styler", label: "Sản phẩm" },
   { href: "/admin/reports", icon: "flag", label: "Báo cáo", countKey: "openReports" },

@@ -24,16 +24,21 @@ export function SellerShopProvider({ children }: { children: React.ReactNode }) 
   const [stats, setStats] = useState<SellerStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    const [profileResult, statsResult] = await Promise.allSettled([sellerApi.shopProfile(), sellerApi.stats()]);
-    if (profileResult.status === "fulfilled") setProfile(profileResult.value.data);
-    if (statsResult.status === "fulfilled") setStats(statsResult.value.data);
-    setLoading(false);
-  }, []);
+  const load = useCallback(
+    () =>
+      Promise.allSettled([sellerApi.shopProfile(), sellerApi.stats()]).then(([profileResult, statsResult]) => {
+        if (profileResult.status === "fulfilled") setProfile(profileResult.value.data);
+        if (statsResult.status === "fulfilled") setStats(statsResult.value.data);
+        setLoading(false);
+      }),
+    []
+  );
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    load();
+  }, [load]);
+
+  const refresh = load;
 
   const value = useMemo(() => ({ profile, stats, loading, refresh, setProfile }), [profile, stats, loading, refresh]);
 

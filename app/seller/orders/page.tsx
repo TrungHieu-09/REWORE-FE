@@ -69,7 +69,7 @@ export default function SellerOrdersPage() {
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller orders locked</h1>
               <p>Bạn cần được duyệt seller trước khi quản lý đơn hàng.</p>
-              <Link href="/sell-with-us">Liên hệ để được cấp tài khoản seller</Link>
+              <Link href="/shop">Về cửa hàng</Link>
             </section>
           ) : (
             <div className="seller-listings-page">
@@ -117,6 +117,12 @@ export default function SellerOrdersPage() {
                             </div>
                             <span className="sp-price">{formatVnd(order.totalPrice + order.shippingFee)}</span>
                           </div>
+                          {order.platformFeeAmount != null && order.sellerPayoutAmount != null && (
+                            <p className="text-[12px] text-[#88726c]">
+                              Phí sàn {order.platformFeeRate}%: {formatVnd(order.platformFeeAmount)} · Bạn nhận {formatVnd(order.sellerPayoutAmount)}
+                              {order.payoutPaidAt ? " · Đã chuyển khoản" : order.status === "COMPLETED" ? " · Chờ sàn chuyển khoản" : " · Nhận khi đơn hoàn tất"}
+                            </p>
+                          )}
                           <div className="seller-listing-meta">
                             <StatusBadge label={order.status} tone={orderStatusTone(order.status)} />
                             <StatusBadge label={order.paymentStatus ?? "UNPAID"} tone={orderStatusTone(order.paymentStatus ?? "UNPAID")} />

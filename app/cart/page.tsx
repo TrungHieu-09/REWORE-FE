@@ -227,14 +227,13 @@ export default function CartPage() {
                       </button>
 
                       {isItemAvailable ? (
-                        <button
-                          disabled={busyId === item.id}
-                          onClick={() => buy(item)}
-                          className="px-6 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+                        <Link
+                          href={`/checkout?productId=${item.productId}`}
+                          className="px-6 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all shadow-sm flex items-center gap-1.5"
                         >
                           <span className="material-symbols-outlined text-base">lock</span>
-                          <span>{busyId === item.id ? "Processing..." : "Buy (Escrow)"}</span>
-                        </button>
+                          <span>Checkout (Escrow)</span>
+                        </Link>
                       ) : (
                         <span className="text-xs font-bold text-[#ba1a1a] bg-[#ffdad6] px-3 py-1 rounded-full">
                           Sold / Unavailable

@@ -23,6 +23,8 @@ export default function AdminDashboardPage() {
     gmv_total: number;
     pending_sellers_count: number;
     open_reports_count: number;
+    platform_fees_total?: number;
+    pending_payout_total?: number;
   } | null>(null);
   const [apiMessage, setApiMessage] = useState("");
 
@@ -82,6 +84,8 @@ export default function AdminDashboardPage() {
     .filter((item) => item.paymentStatus === "PAID" || item.status === "PAID" || item.status === "SHIPPED" || item.status === "DELIVERED")
     .reduce((sum, item) => sum + item.totalPrice, 0);
   const totalUsers = overview?.total_users ?? users.length;
+  const platformFees = overview?.platform_fees_total ?? 0;
+  const pendingPayouts = overview?.pending_payout_total ?? 0;
 
   const stats = useMemo(
     () => [
@@ -89,8 +93,9 @@ export default function AdminDashboardPage() {
       { icon: "verified_user", label: "Seller đã duyệt", value: String(approvedSellers), sub: "Approved shops", progress: 72 },
       { icon: "payments", label: "GMV", value: formatVnd(gmv), sub: "Paid orders", progress: 58 },
       { icon: "today", label: "Đơn hôm nay", value: String(todaysOrders), sub: "New orders", progress: 46 },
+      { icon: "receipt_long", label: "Phí sàn đã thu", value: formatVnd(platformFees), sub: `Chờ chuyển seller: ${formatVnd(pendingPayouts)}`, progress: 52 },
     ],
-    [approvedSellers, gmv, todaysOrders, totalUsers]
+    [approvedSellers, gmv, pendingPayouts, platformFees, todaysOrders, totalUsers]
   );
 
   return (
@@ -131,7 +136,7 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap gap-3">
           <Link className="admin-pill admin-pill-dark" href="/admin/sellers">
             <span className="material-symbols-outlined text-[16px]">verified_user</span>
-            Duyệt Seller
+            Người bán
           </Link>
           <Link className="admin-pill admin-pill-dark" href="/admin/reports">
             <span className="material-symbols-outlined text-[16px]">flag</span>
