@@ -1,8 +1,9 @@
 "use client";
 
-import { useHold } from "../../context/HoldContext";
+import { useEffect, useState } from "react";
+import { holdsApi } from "../../lib/api";
 
-export type ProfileTab = "overview" | "bids" | "holds" | "orders" | "settings";
+export type ProfileTab = "overview" | "bids" | "holds" | "orders" | "reports" | "settings";
 
 interface ProfileTabNavProps {
   activeTab: ProfileTab;
@@ -10,17 +11,25 @@ interface ProfileTabNavProps {
 }
 
 export default function ProfileTabNav({ activeTab, onTabChange }: ProfileTabNavProps) {
-  const { heldItems } = useHold();
+  const [holdCount, setHoldCount] = useState(0);
+
+  useEffect(() => {
+    holdsApi
+      .mine()
+      .then((res) => setHoldCount(res.data.length))
+      .catch(() => undefined);
+  }, []);
 
   const tabs: { id: ProfileTab; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "bids", label: "My Bids" },
     {
       id: "holds",
-      label: heldItems.length > 0 ? `Đang giữ hàng (${heldItems.length})` : "Đang giữ hàng",
-      count: heldItems.length,
+      label: holdCount > 0 ? `Đang giữ hàng (${holdCount})` : "Đang giữ hàng",
+      count: holdCount,
     },
     { id: "orders", label: "Orders & Returns" },
+    { id: "reports", label: "Báo cáo của tôi" },
     { id: "settings", label: "Account Settings" },
   ];
 

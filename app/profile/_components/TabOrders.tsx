@@ -2,19 +2,39 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ApiError, apiAssetUrl, ordersApi, reportsApi, sellerDisplayName, type Order, type OrderStatus } from "@/app/lib/api";
+import Link from "next/link";
+import BankQr from "@/app/components/BankQr";
+import { ApiError, ordersApi, reportsApi, sellerDisplayName, type Order, type OrderStatus, type PaymentInfo } from "@/app/lib/api";
 
 function formatVND(amount: number) {
   return "₫" + new Intl.NumberFormat("vi-VN").format(amount);
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: "Chờ thanh toán",
+  CONFIRMED: "Đã thanh toán",
+  PAID: "Đã thanh toán",
+  SHIPPED: "Đang giao hàng",
+  DELIVERED: "Đã giao",
+  COMPLETED: "Hoàn tất",
+  CANCELLED: "Đã huỷ",
+  REFUNDED: "Đã hoàn tiền",
+};
+
 export default function TabOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+
+  useEffect(() => {
+    ordersApi
+      .paymentInfo()
+      .then((res) => setPaymentInfo(res.data))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +58,16 @@ export default function TabOrders() {
     };
   }, []);
 
+  // Có đơn đang chờ thanh toán thì tự tải lại mỗi 5 giây để thấy khi tiền về.
+  const hasUnpaid = orders.some((o) => o.status === "PENDING" && (o.paymentStatus ?? "UNPAID") === "UNPAID");
+  useEffect(() => {
+    if (!hasUnpaid) return;
+    const timer = window.setInterval(() => {
+      ordersApi.list({ role: "buyer", limit: 50 }).then((res) => setOrders(res.data)).catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [hasUnpaid]);
+
   const updateStatus = async (order: Order, status: OrderStatus) => {
     if (status === order.status || status === "PENDING") return;
     setUpdatingId(order.id);
@@ -50,21 +80,6 @@ export default function TabOrders() {
       setMessage(err instanceof ApiError ? err.message : "Could not update order.");
     } finally {
       setUpdatingId(null);
-    }
-  };
-
-  const uploadProof = async (order: Order, file?: File) => {
-    if (!file) return;
-    setUploadingId(order.id);
-    setMessage("");
-    try {
-      const res = await ordersApi.uploadPaymentProof(order.id, file);
-      setOrders((prev) => prev.map((item) => (item.id === order.id ? res.data : item)));
-      setMessage(res.message);
-    } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Không thể gửi chứng từ thanh toán.");
-    } finally {
-      setUploadingId(null);
     }
   };
 
@@ -137,38 +152,47 @@ export default function TabOrders() {
                   </p>
                   <p className="text-xs text-[#88726c] mt-2">
                     Thanh toán: {order.paymentStatus ?? "UNPAID"}
-                    {order.qrCodeRef ? " · Đã gửi bill" : ""}
                   </p>
-                  {order.qrCodeRef && (
-                    <a href={apiAssetUrl(order.qrCodeRef)} target="_blank" rel="noreferrer" className="text-xs font-semibold text-[#974226] hover:underline">
-                      Xem chứng từ đã gửi
-                    </a>
+                  {(order.paymentStatus ?? "UNPAID") === "UNPAID" && order.status === "PENDING" && (
+                    <div className="mt-3 rounded-xl border border-[#f3cca0] bg-[#fff8f0] p-3 text-xs text-[#55443d] space-y-1">
+                      <p className="font-semibold text-[#7b4a10]">Chuyển khoản cho REWORE để thanh toán</p>
+                      {paymentInfo?.configured ? (
+                        <>
+                          <BankQr info={paymentInfo} amount={order.totalPrice + order.shippingFee} memo={`${paymentInfo.memoPrefix}${order.id.slice(-8).toUpperCase()}`} />
+                          <p className="text-center">Số tiền: <strong>{formatVND(order.totalPrice + order.shippingFee)}</strong></p>
+                        </>
+                      ) : (
+                        <p>Sàn chưa cấu hình tài khoản nhận tiền. Vui lòng liên hệ admin.</p>
+                      )}
+                      <p className="text-[#88726c]">Đơn chưa thanh toán sau 24 giờ sẽ tự huỷ và bị trừ điểm uy tín. Đơn tự cập nhật khi sàn nhận được tiền, không cần gửi bill.</p>
+                    </div>
                   )}
                 </div>
                 <div className="sm:w-52 flex flex-col gap-2 justify-center">
                   <span className="inline-flex justify-center px-3 py-1 rounded-full bg-[#f2dfd1] text-[#55443d] text-xs font-semibold">
-                    {order.status}
+                    {STATUS_LABEL[order.status] ?? order.status}
                   </span>
-                  {(order.paymentStatus ?? "UNPAID") === "UNPAID" && order.status === "PENDING" && (
-                    <label className="admin-pill admin-pill-accent justify-center cursor-pointer">
-                      <span className="material-symbols-outlined text-[16px]">upload</span>
-                      {uploadingId === order.id ? "Đang gửi..." : order.qrCodeRef ? "Gửi lại bill" : "Upload bill"}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        disabled={uploadingId === order.id}
-                        onChange={(event) => uploadProof(order, event.target.files?.[0])}
-                      />
-                    </label>
+                  <Link href={`/orders/${order.id}`} className="admin-pill admin-pill-accent justify-center">
+                    Xem chi tiết
+                  </Link>
+                  {order.status === "PENDING" && (order.paymentStatus ?? "UNPAID") === "UNPAID" && (
+                    <button
+                      className="admin-pill admin-pill-muted justify-center"
+                      disabled={updatingId === order.id}
+                      onClick={() => {
+                        if (window.confirm("Huỷ đơn hàng này? Sản phẩm sẽ được mở lại cho người khác mua.")) updateStatus(order, "CANCELLED");
+                      }}
+                    >
+                      Huỷ đơn
+                    </button>
                   )}
-                  {order.status === "SHIPPED" && (
+                  {(order.status === "SHIPPED" || order.status === "DELIVERED") && (
                     <button
                       className="admin-pill admin-pill-green justify-center"
                       disabled={updatingId === order.id}
-                      onClick={() => updateStatus(order, "DELIVERED")}
+                      onClick={() => updateStatus(order, "COMPLETED")}
                     >
-                      Đã nhận hàng
+                      Đã nhận hàng, hoàn tất
                     </button>
                   )}
                   {order.status !== "COMPLETED" && order.status !== "REFUNDED" && order.status !== "CANCELLED" && (

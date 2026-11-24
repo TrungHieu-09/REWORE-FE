@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Auction } from "../_types";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
@@ -90,9 +91,10 @@ export default function FeaturedAuctionCard({
           </div>
 
           {/* CTA */}
-          <button
+          <Link
+            href={`/auctions/live?id=${encodeURIComponent(auction.id)}`}
             className="
-              w-full py-3.5 bg-[#b65a3c] text-white rounded-xl
+              block text-center w-full py-3.5 bg-[#b65a3c] text-white rounded-xl
               font-semibold text-sm tracking-wide
               hover:bg-[#974226] active:scale-[0.98]
               transition-all duration-200
@@ -100,7 +102,7 @@ export default function FeaturedAuctionCard({
             "
           >
             Join Auction
-          </button>
+          </Link>
         </div>
       </div>
     </article>

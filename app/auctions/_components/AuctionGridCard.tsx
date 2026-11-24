@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Auction } from "../_types";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
@@ -86,16 +87,17 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
 
       {/* CTA */}
       {isLive ? (
-        <button
+        <Link
+          href={`/auctions/live?id=${encodeURIComponent(auction.id)}`}
           className="
-            w-full py-2.5 bg-[#b65a3c] text-white rounded-xl
+            block text-center w-full py-2.5 bg-[#b65a3c] text-white rounded-xl
             text-xs font-semibold tracking-wide
             hover:bg-[#974226] active:scale-[0.98] transition-all duration-200
             shadow-sm shadow-[#b65a3c]/20 hover:shadow-md hover:shadow-[#974226]/25
           "
         >
           Join Auction
-        </button>
+        </Link>
       ) : (
         <button
           className="

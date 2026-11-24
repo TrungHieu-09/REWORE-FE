@@ -135,8 +135,8 @@ export default function SellerListingsPage() {
             <section className="seller-create-locked">
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller tools are locked</h1>
-              <p>Bạn cần được duyệt seller trước khi quản lý sản phẩm.</p>
-              <Link href="/shop">Về cửa hàng</Link>
+              <p>Bạn chưa có shop. Đăng sản phẩm đầu tiên để mở shop và dùng các công cụ này.</p>
+              <Link href="/seller/products/new">Đăng sản phẩm đầu tiên</Link>
             </section>
           ) : (
             <div className="seller-listings-page">

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +11,8 @@ import {
   ApiError,
   apiAssetUrl,
   cartApi,
-  ordersApi,
+  conversationsApi,
+  holdsApi,
   productsApi,
   sellerDisplayName,
   wishlistApi,
@@ -21,18 +21,18 @@ import {
 } from "../../lib/api";
 
 const CONDITION_LABEL: Record<ProductCondition, string> = {
-  NEW: "New with tags",
-  LIKE_NEW: "Like New",
-  GOOD: "Good Vintage Condition",
-  FAIR: "Fair Vintage Wear",
-  POOR: "Distressed Archive",
+  NEW: "Mới, còn tag",
+  LIKE_NEW: "Như mới",
+  GOOD: "Còn tốt",
+  FAIR: "Đã dùng nhiều",
+  POOR: "Cũ, có lỗi",
 };
 
 const AVAILABILITY_LABEL: Record<string, string> = {
-  available: "AVAILABLE",
-  upcoming_drop: "UPCOMING DROP",
-  held: "IN ESCROW HOLD",
-  sold: "SOLD OUT",
+  available: "CÒN HÀNG",
+  upcoming_drop: "SẮP MỞ BÁN",
+  held: "ĐANG ĐƯỢC GIỮ",
+  sold: "ĐÃ BÁN",
 };
 
 function formatVnd(amount: number) {
@@ -47,19 +47,17 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const productId = params?.id ?? "";
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [wishlistOn, setWishlistOn] = useState(false);
-  const [wishlistBusy, setWishlistBusy] = useState(false);
   const [cartOn, setCartOn] = useState(false);
   const [cartBusy, setCartBusy] = useState(false);
-  const [orderBusy, setOrderBusy] = useState(false);
-  const [shippingAddress, setShippingAddress] = useState("");
-  const [orderNote, setOrderNote] = useState("");
+  const [holdBusy, setHoldBusy] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [modalSource, setModalSource] = useState("general");
 
@@ -67,6 +65,8 @@ export default function ProductDetailPage() {
     if (!productId) return;
 
     let cancelled = false;
+    // Đổi sản phẩm thì bật cờ đang tải trước khi gọi API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setMessage("");
 
@@ -100,6 +100,12 @@ export default function ProductDetailPage() {
     };
   }, [isLoggedIn, productId]);
 
+  useEffect(() => {
+    if (!product?.hold) return;
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [product?.hold]);
+
   const images = useMemo(() => {
     if (!product?.images?.length) return [];
     return product.images.map((img) => apiAssetUrl(img));
@@ -107,7 +113,12 @@ export default function ProductDetailPage() {
 
   const mainImage = images[activeImage] || images[0] || "";
   const sellerName = product ? sellerDisplayName(product.seller) : "REWORE Seller";
-  const canBuy = product?.status === "ACTIVE" && product?.availabilityStatus === "available";
+  const isOwn = Boolean(product && user?.id === product.sellerId);
+  const heldByMe = Boolean(product?.hold?.heldByMe);
+  const heldByOther = Boolean(product?.hold && !product.hold.heldByMe);
+  const holdSecondsLeft = product?.hold ? Math.max(0, Math.floor((new Date(product.hold.expiresAt).getTime() - nowMs) / 1000)) : 0;
+  const canHold = product?.status === "ACTIVE" && product?.availabilityStatus === "available";
+  const canBuy = !isOwn && (canHold || (heldByMe && holdSecondsLeft > 0));
   const isAuction = product?.status === "AUCTION";
 
   const toggleWishlist = async () => {
@@ -118,7 +129,6 @@ export default function ProductDetailPage() {
       return;
     }
 
-    setWishlistBusy(true);
     const nextState = !wishlistOn;
     setWishlistOn(nextState);
 
@@ -133,7 +143,6 @@ export default function ProductDetailPage() {
       setWishlistOn(!nextState);
       setMessage(err instanceof ApiError ? err.message : "Cập nhật wishlist thất bại.");
     } finally {
-      setWishlistBusy(false);
     }
   };
 
@@ -161,7 +170,27 @@ export default function ProductDetailPage() {
     }
   };
 
-  const buyNow = async () => {
+  const reloadProduct = async () => {
+    if (!product) return;
+    try {
+      const res = await productsApi.get(product.id);
+      setProduct(res.data);
+    } catch {
+      // keep the current view
+    }
+  };
+
+  const buyNow = () => {
+    if (!product) return;
+    if (!isLoggedIn) {
+      setModalSource("hold");
+      setLoginModalOpen(true);
+      return;
+    }
+    router.push(`/checkout?productId=${product.id}`);
+  };
+
+  const holdProduct = async () => {
     if (!product) return;
     if (!isLoggedIn) {
       setModalSource("hold");
@@ -169,30 +198,51 @@ export default function ProductDetailPage() {
       return;
     }
 
-    setOrderBusy(true);
+    setHoldBusy(true);
     setMessage("");
-
     try {
-      const res = await ordersApi.create({
-        productId: product.id,
-        shippingAddress: shippingAddress.trim() || undefined,
-        note: orderNote.trim() || undefined,
-      });
-
-      setProduct((current) =>
-        current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current
-      );
-      setMessage(`Đơn hàng #${res.data.id} đã được tạo thành công dưới bảo vệ Escrow.`);
-      setTimeout(() => router.push("/profile"), 2000);
+      const res = await holdsApi.create(product.id);
+      setMessage(res.message);
+      await reloadProduct();
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Không thể tạo đơn hàng.");
-      if (err instanceof ApiError && err.status === 409) {
-        setProduct((current) =>
-          current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current
-        );
-      }
+      setMessage(err instanceof ApiError ? err.message : "Không thể giữ hàng.");
+      await reloadProduct();
     } finally {
-      setOrderBusy(false);
+      setHoldBusy(false);
+    }
+  };
+
+  const releaseHold = async () => {
+    if (!product) return;
+    setHoldBusy(true);
+    setMessage("");
+    try {
+      const mine = await holdsApi.mine();
+      const hold = mine.data.find((item) => item.productId === product.id);
+      if (hold) {
+        const res = await holdsApi.release(hold.id);
+        setMessage(res.message);
+      }
+      await reloadProduct();
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể huỷ giữ hàng.");
+    } finally {
+      setHoldBusy(false);
+    }
+  };
+
+  const startChat = async () => {
+    if (!product) return;
+    if (!isLoggedIn) {
+      setModalSource("hold");
+      setLoginModalOpen(true);
+      return;
+    }
+    try {
+      const res = await conversationsApi.start({ sellerId: product.sellerId, productId: product.id });
+      router.push(`/messages?c=${res.data.id}`);
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể mở cuộc trò chuyện.");
     }
   };
 
@@ -208,7 +258,7 @@ export default function ProductDetailPage() {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#88726c] hover:text-[#974226] transition-colors"
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
-            <span>Back to Curated Shop</span>
+            <span>Về cửa hàng</span>
           </Link>
         </div>
 
@@ -220,7 +270,7 @@ export default function ProductDetailPage() {
           <div className="bg-white border border-[#dbc1b9]/40 rounded-3xl p-12 text-center max-w-md mx-auto my-12 shadow-xs">
             <span className="material-symbols-outlined text-4xl text-[#88726c] mb-3">inventory_2</span>
             <h1 className="font-headline-lg text-2xl font-bold text-[#231a11] mb-2">Item Not Found</h1>
-            <p className="text-sm text-[#55433d] mb-6">This item may have been sold or removed from the archive.</p>
+            <p className="text-sm text-[#55433d] mb-6">Món này có thể đã bán hoặc đã bị gỡ.</p>
             <Link
               href="/shop"
               className="inline-flex px-6 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold"
@@ -251,7 +301,7 @@ export default function ProductDetailPage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-[#88726c]">
                       <span className="material-symbols-outlined text-4xl mb-2">checkroom</span>
-                      <span className="font-label-md text-sm">Archival scan in progress</span>
+                      <span className="font-label-md text-sm">Chưa có ảnh</span>
                     </div>
                   )}
 
@@ -301,7 +351,7 @@ export default function ProductDetailPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs uppercase font-bold tracking-widest text-[#974226]">
-                      {product.brand || "Vintage Atelier"}
+                      {product.brand || "Hàng si"}
                     </span>
                     <span className="text-xs text-[#88726c]">·</span>
                     <span className="text-xs font-semibold text-[#55433d]">
@@ -334,7 +384,7 @@ export default function ProductDetailPage() {
                         )}
                       </h4>
                       <p className="font-body-md text-xs text-[#55433d]">
-                        {product.seller?.isVerified ? "Verified Boutique Atelier" : "Community Curator"}
+                        Người bán trên REWORE
                       </p>
                     </div>
                   </div>
@@ -356,7 +406,7 @@ export default function ProductDetailPage() {
                   </div>
                   <div>
                     <span className="text-[#88726c] block mb-0.5">Color Palette</span>
-                    <strong className="text-[#231a11] font-semibold">{product.color || "Archival Earth"}</strong>
+                    <strong className="text-[#231a11] font-semibold">{product.color || "Chưa ghi"}</strong>
                   </div>
                   <div>
                     <span className="text-[#88726c] block mb-0.5">Authenticity</span>
@@ -388,33 +438,34 @@ export default function ProductDetailPage() {
                     </div>
                   ) : (
                     <>
-                      <input
-                        type="text"
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder="Địa chỉ giao hàng nhận hàng"
-                        className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
-                      />
-                      <input
-                        type="text"
-                        value={orderNote}
-                        onChange={(e) => setOrderNote(e.target.value)}
-                        placeholder="Ghi chú cho người bán (nếu có)"
-                        className="w-full px-4 py-2.5 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] focus:outline-none focus:border-[#231a11]"
-                      />
+                      {heldByMe && holdSecondsLeft > 0 && (
+                        <div className="p-3 rounded-2xl bg-[#fff2de] border border-[#f3cca0] text-xs text-[#8b4c09] flex items-center justify-between gap-3">
+                          <span className="font-semibold">Món này đang được giữ riêng cho bạn</span>
+                          <span className="px-2.5 py-1 rounded-full bg-white text-[#974226] font-mono font-bold">
+                            {String(Math.floor(holdSecondsLeft / 60)).padStart(2, "0")}:{String(holdSecondsLeft % 60).padStart(2, "0")}
+                          </span>
+                        </div>
+                      )}
+                      {heldByOther && (
+                        <div className="p-3 rounded-2xl bg-[#f2dfd1]/60 border border-[#dbc1b9] text-xs text-[#55433d]">
+                          Món này đang được người khác giữ. Quay lại sau ít phút, nếu họ không mua món sẽ được mở lại.
+                        </div>
+                      )}
 
                       <div className="flex gap-3 pt-2">
                         <button
-                          disabled={!canBuy || orderBusy}
+                          disabled={!canBuy}
                           onClick={buyNow}
                           className="flex-1 py-3 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
                         >
                           <span className="material-symbols-outlined text-base">lock</span>
                           <span>
-                            {canBuy
-                              ? orderBusy
-                                ? "Đang tạo đơn hàng..."
-                                : "Mua ngay (Bảo vệ Escrow)"
+                            {isOwn
+                              ? "Sản phẩm của bạn"
+                              : canBuy
+                              ? "Mua ngay (Bảo vệ Escrow)"
+                              : heldByOther
+                              ? "Đang được người khác giữ"
                               : "Đã bán hết"}
                           </span>
                         </button>
@@ -428,6 +479,37 @@ export default function ProductDetailPage() {
                           <span>{cartOn ? "Đã trong giỏ" : "Thêm vào giỏ"}</span>
                         </button>
                       </div>
+
+                      {!isOwn && (
+                        <div className="flex gap-3">
+                          {canHold && (
+                            <button
+                              disabled={holdBusy}
+                              onClick={holdProduct}
+                              className="flex-1 py-2.5 border border-[#556138] text-[#556138] rounded-full font-label-md text-xs font-semibold hover:bg-[#f2f6e6] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                            >
+                              <span className="material-symbols-outlined text-base">timer</span>
+                              <span>{holdBusy ? "Đang giữ..." : "Giữ hàng"}</span>
+                            </button>
+                          )}
+                          {heldByMe && (
+                            <button
+                              disabled={holdBusy}
+                              onClick={releaseHold}
+                              className="flex-1 py-2.5 border border-[#dbc1b9] text-[#55433d] rounded-full font-label-md text-xs font-semibold hover:bg-[#feeadc] transition-all disabled:opacity-50"
+                            >
+                              Huỷ giữ
+                            </button>
+                          )}
+                          <button
+                            onClick={startChat}
+                            className="flex-1 py-2.5 border border-[#dbc1b9] text-[#231a11] rounded-full font-label-md text-xs font-semibold hover:bg-[#feeadc] transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <span className="material-symbols-outlined text-base">chat</span>
+                            <span>Nhắn tin cho shop</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -439,10 +521,10 @@ export default function ProductDetailPage() {
                 {/* Description */}
                 <div className="border-t border-[#dbc1b9]/30 pt-4">
                   <h3 className="font-headline-md text-sm font-bold text-[#231a11] mb-2">
-                    Archival Notes &amp; Provenance
+                    Mô tả món đồ
                   </h3>
                   <p className="font-body-md text-xs text-[#55433d] leading-relaxed whitespace-pre-line">
-                    {product.description || "A verified circular luxury piece carefully inspected for material integrity and provenance."}
+                    {product.description || "Người bán chưa thêm mô tả. Nhắn tin cho shop để hỏi thêm về tình trạng."}
                   </p>
                 </div>
               </div>

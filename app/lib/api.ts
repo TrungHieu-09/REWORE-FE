@@ -181,6 +181,7 @@ export type Product = {
     wishlistItems: number;
   };
   auction?: Auction | null;
+  hold?: { expiresAt: string; heldByMe: boolean } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -315,6 +316,61 @@ export type SellerShopProfile = {
 export type UpdateSellerShopPayload = Partial<
   Pick<SellerShopProfile, "shopName" | "pickupAddress" | "bankName" | "bankAccountName" | "bankAccountNumber">
 > & { bio?: string | null };
+
+export type ReputationInfo = {
+  score: number;
+  minToSell: number;
+  minToBuy: number;
+  newSellerListingLimit: number;
+  rules: Record<string, number>;
+  events: { id: string; delta: number; reason: string; note: string | null; orderId: string | null; createdAt: string }[];
+};
+
+export type ProductHoldItem = {
+  id: string;
+  productId: string;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+  product: {
+    id: string;
+    title: string;
+    images: string[];
+    price: number;
+    brand: string | null;
+    size: string | null;
+    sellerId: string;
+    shopName: string | null;
+  } | null;
+};
+
+export type ChatPartner = { id: string; name: string; avatar: string | null };
+
+export type ConversationSummary = {
+  id: string;
+  role: "buyer" | "seller";
+  otherUser: ChatPartner;
+  product: { id: string; title: string; images: string[]; price: number; status: string; availabilityStatus: string } | null;
+  lastMessage: { body: string; createdAt: string; senderId: string } | null;
+  lastMessageAt: string;
+  unread: number;
+};
+
+export type ChatMessage = { id: string; senderId: string; body: string; createdAt: string };
+
+export type ConversationDetail = {
+  conversation: { id: string; role: "buyer" | "seller"; otherUser: ChatPartner; product: ConversationSummary["product"] };
+  messages: ChatMessage[];
+};
+
+export type PaymentInfo = {
+  configured: boolean;
+  bankName: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName: string;
+  memoPrefix: string;
+};
 
 export type SellerSalesReport = {
   months: number;
@@ -454,6 +510,7 @@ export type CreateAuctionPayload = {
 export type UpdateUserPayload = Partial<
   Pick<User, "name" | "bio" | "phone" | "address" | "avatar">
 >;
+// bio, phone, address, avatar gửi null để xoá giá trị.
 
 export class ApiError extends Error {
   status: number;
@@ -634,6 +691,7 @@ export const authApi = {
       method: "POST",
       auth: true,
     }),
+  reputation: () => apiRequest<ApiItemResponse<ReputationInfo>>("/api/auth/reputation", { auth: true }),
   forgotPassword: (payload: { email: string }) =>
     apiRequest<{ success: true; message: string; expiresInMinutes?: number; resendCooldownSeconds?: number }>(
       "/api/auth/forgot-password",
@@ -666,6 +724,20 @@ export const usersApi = {
       auth: true,
       body: JSON.stringify(payload),
     }),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return apiRequest<ApiItemResponse<User> & { message: string }>("/api/users/me/avatar", {
+      method: "POST",
+      auth: true,
+      body: formData,
+    });
+  },
+  removeAvatar: () =>
+    apiRequest<ApiItemResponse<User> & { message: string }>("/api/users/me/avatar", {
+      method: "DELETE",
+      auth: true,
+    }),
   delete: (id: string) =>
     apiRequest<{ success: true; message: string }>(`/api/users/${id}`, {
       method: "DELETE",
@@ -676,7 +748,8 @@ export const usersApi = {
 export const productsApi = {
   list: (query?: ProductListQuery) =>
     apiRequest<ApiListResponse<Product>>(`/api/products${toQueryString(query)}`),
-  get: (id: string) => apiRequest<ApiItemResponse<Product>>(`/api/products/${id}`),
+  // auth: true để server biết ai đang xem (ví dụ sản phẩm đang được chính bạn giữ).
+  get: (id: string) => apiRequest<ApiItemResponse<Product>>(`/api/products/${id}`, { auth: true }),
   create: (payload: CreateProductPayload) =>
     apiRequest<ApiItemResponse<Product>>("/api/products", {
       method: "POST",
@@ -741,6 +814,45 @@ export const bidsApi = {
     }),
 };
 
+export const holdsApi = {
+  create: (productId: string) =>
+    apiRequest<ApiItemResponse<ProductHoldItem> & { message: string }>("/api/holds", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ productId }),
+    }),
+  mine: () =>
+    apiRequest<{
+      success: true;
+      data: ProductHoldItem[];
+      meta: { maxActive: number; durationMinutes: number; minReputation: number };
+    }>("/api/holds/my", { auth: true }),
+  release: (id: string) =>
+    apiRequest<{ success: true; message: string }>(`/api/holds/${id}`, { method: "DELETE", auth: true }),
+};
+
+export const conversationsApi = {
+  start: (payload: { sellerId: string; productId?: string }) =>
+    apiRequest<ApiItemResponse<{ id: string }>>("/api/conversations", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
+  list: () => apiRequest<ApiItemResponse<ConversationSummary[]>>("/api/conversations", { auth: true }),
+  unreadCount: () => apiRequest<ApiItemResponse<{ unread: number }>>("/api/conversations/unread-count", { auth: true }),
+  messages: (id: string, after?: string) =>
+    apiRequest<ApiItemResponse<ConversationDetail>>(
+      `/api/conversations/${id}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`,
+      { auth: true }
+    ),
+  send: (id: string, body: string) =>
+    apiRequest<ApiItemResponse<ChatMessage>>(`/api/conversations/${id}/messages`, {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ body }),
+    }),
+};
+
 export const ordersApi = {
   list: (query?: OrderListQuery) =>
     apiRequest<ApiListResponse<Order>>(`/api/orders${toQueryString(query)}`, {
@@ -748,9 +860,9 @@ export const ordersApi = {
     }),
   create: (payload: {
     productId: string;
-    receiverName?: string;
-    receiverPhone?: string;
-    shippingAddress?: string;
+    receiverName: string;
+    receiverPhone: string;
+    shippingAddress: string;
     note?: string;
   }) =>
     apiRequest<ApiItemResponse<Order> & { message: string }>("/api/orders", {
@@ -758,6 +870,7 @@ export const ordersApi = {
       auth: true,
       body: JSON.stringify(payload),
     }),
+  paymentInfo: () => apiRequest<ApiItemResponse<PaymentInfo>>("/api/orders/payment-info", { auth: true }),
   uploadPaymentProof: (id: string, file: File) => {
     const formData = new FormData();
     formData.append("paymentProof", file);
@@ -941,6 +1054,18 @@ export const adminApi = {
       method: "PATCH",
       auth: true,
     }),
+  refundOrder: (id: string, reason: string) =>
+    apiRequest<ApiItemResponse<Order>>(`/api/admin/orders/${id}/refund`, {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ reason }),
+    }),
+  adjustReputation: (id: string, payload: { delta: number; reason: string }) =>
+    apiRequest<ApiItemResponse<User>>(`/api/admin/users/${id}/reputation`, {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
   payoutOrder: (id: string) =>
     apiRequest<ApiItemResponse<Order>>(`/api/admin/orders/${id}/payout`, {
       method: "POST",
@@ -964,6 +1089,60 @@ export const adminApi = {
       range: "week" | "month";
       data: { date: string; users_new: number; orders_new: number; gmv: number }[];
     }>(`/api/admin/stats/growth${toQueryString({ range })}`, { auth: true }),
+  topSellers: (limit = 5) =>
+    apiRequest<{
+      success: true;
+      data: {
+        seller: {
+          id: string;
+          email?: string;
+          name?: string;
+          reputation?: number;
+          sellerProfile?: { shopName: string; status: string } | null;
+        };
+        total_orders: number;
+        gmv_total: number;
+      }[];
+    }>(`/api/admin/stats/top-sellers${toQueryString({ limit })}`, { auth: true }),
+  settings: () =>
+    apiRequest<
+      ApiItemResponse<{
+        platformFeePercent: number;
+        bank: PaymentInfo & { sepayConfigured: boolean };
+        reputation: {
+          config: {
+            initial: number;
+            max: number;
+            minToSell: number;
+            minToBuy: number;
+            newSellerListingLimit: number;
+            unpaidOrderHours: number;
+            shipDeadlineDays: number;
+          };
+          rules: Record<string, number>;
+        };
+        holds: {
+          durationMinutes: number;
+          maxActive: number;
+          minReputation: number;
+        };
+        integrations: {
+          supabaseStorage: boolean;
+          sepayWebhook: boolean;
+          emailService: boolean;
+        };
+        recentLogs: {
+          id: string;
+          adminId: string;
+          actionType: string;
+          targetType: string;
+          targetId: string;
+          note: string | null;
+          createdAt: string;
+          admin?: { id: string; name: string; email: string };
+        }[];
+      }>
+    >("/api/admin/settings", { auth: true }),
 };
 
 

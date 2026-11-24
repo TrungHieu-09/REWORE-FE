@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "../../context/AuthContext";
+import { useUnreadMessages } from "../../hooks/useUnreadMessages";
 import { shopInitials, useSellerShop } from "./SellerShopProvider";
 
 export default function SellerTopBar() {
   const { profile, stats } = useSellerShop();
+  const { isLoggedIn } = useAuth();
+  const unreadMessages = useUnreadMessages(isLoggedIn);
   const shopName = profile?.shopName ?? "Cửa hàng của tôi";
   const feeLabel = `Phí sàn ${stats?.platformFees.rate ?? 5}%`;
   const pendingOrders = stats?.orders.byStatus.PENDING ?? 0;
@@ -42,6 +46,11 @@ export default function SellerTopBar() {
           title="Messages"
         >
           <span className="material-symbols-outlined text-[20px]">chat</span>
+          {unreadMessages > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-[#974226] text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
+              {unreadMessages > 9 ? "9+" : unreadMessages}
+            </span>
+          )}
         </Link>
 
         <div className="h-6 w-px bg-[#dbc1b9]/40 mx-1" />

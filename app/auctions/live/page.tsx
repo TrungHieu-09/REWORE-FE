@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { Suspense, useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   ApiError,
@@ -63,8 +64,10 @@ function useCountdown(targetIso?: string) {
   return { display: hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`, seconds: sec };
 }
 
-export default function LiveAuctionPage() {
+function LiveAuctionContent() {
   const { isLoggedIn } = useAuth();
+  const searchParams = useSearchParams();
+  const requestedAuctionId = searchParams.get("id");
   const [activeThumb, setActiveThumb] = useState(0);
   const [auction, setAuction] = useState<Auction | null>(null);
   const [bidAmount, setBidAmount] = useState(0);
@@ -77,12 +80,17 @@ export default function LiveAuctionPage() {
   useEffect(() => {
     let cancelled = false;
 
-    auctionsApi
-      .list({ status: "LIVE", limit: 1 })
-      .then((res) => {
-        const firstLive = res.data[0];
-        return firstLive ? auctionsApi.get(firstLive.id) : null;
-      })
+    // Có ?id=... thì mở đúng phiên đó, nếu không thì lấy phiên LIVE đầu tiên
+    const loadAuction = requestedAuctionId
+      ? auctionsApi.get(requestedAuctionId)
+      : auctionsApi
+          .list({ status: "LIVE", limit: 1 })
+          .then((res) => {
+            const firstLive = res.data[0];
+            return firstLive ? auctionsApi.get(firstLive.id) : null;
+          });
+
+    loadAuction
       .then((res) => {
         if (cancelled) return;
         if (!res) {
@@ -110,7 +118,35 @@ export default function LiveAuctionPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [requestedAuctionId]);
+
+  // Cập nhật lịch sử bid gần như realtime bằng GET /api/bids/auction/:id (5 giây/lần)
+  useEffect(() => {
+    if (!auction?.id || auction.status !== "LIVE") return;
+    let cancelled = false;
+    const auctionId = auction.id;
+
+    const refresh = () => {
+      bidsApi
+        .forAuction(auctionId, { limit: 20 })
+        .then((res) => {
+          if (cancelled || !res.data?.length) return;
+          const latest = res.data.map(mapBid);
+          setBids(latest);
+          const top = Math.max(...res.data.map((bid) => bid.amount));
+          setBidAmount((current) => Math.max(current, top + (auction.minIncrement ?? 0)));
+        })
+        .catch(() => {
+          /* giữ dữ liệu cũ nếu lần poll này lỗi */
+        });
+    };
+
+    const timer = setInterval(refresh, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [auction?.id, auction?.status, auction?.minIncrement]);
 
   const thumbnails = useMemo(() => {
     const images = auction?.product?.images?.filter(Boolean) ?? [];
@@ -380,3 +416,11 @@ export default function LiveAuctionPage() {
 
 
 
+
+export default function LiveAuctionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#fff8f5]" />}>
+      <LiveAuctionContent />
+    </Suspense>
+  );
+}

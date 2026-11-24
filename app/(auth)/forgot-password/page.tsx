@@ -205,7 +205,7 @@ function ForgotPasswordContent() {
                 &ldquo;Secondhand fashion drops, held fairly.&rdquo;
               </p>
               <p className="text-[11px] uppercase tracking-wider text-[#dbc1b9] mt-2 font-medium">
-                Curated Archives • Rare Provenance
+                Đồ 2hand tuyển chọn • Mỗi món một chiếc
               </p>
             </div>
 
@@ -226,7 +226,7 @@ function ForgotPasswordContent() {
                 >
                   verified
                 </span>
-                <span>Trust Verified Platform</span>
+                <span>Sàn giữ tiền an toàn</span>
               </div>
             </div>
           </div>

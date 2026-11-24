@@ -20,6 +20,49 @@ export default function SellerAuctionsPage() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  // Cập nhật mốc thời gian mỗi 30 giây để nút "đóng phiên" hiện đúng lúc.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const replaceAuction = (updated: Auction) =>
+    setAuctions((items) =>
+      items.map((item) => (item.id === updated.id ? { ...item, ...updated, product: updated.product ?? item.product } : item))
+    );
+
+  const cancelAuction = async (auction: Auction) => {
+    if (!window.confirm("Hủy phiên đấu giá này? Sản phẩm sẽ quay lại trạng thái bán thường.")) return;
+    setBusyId(auction.id);
+    setMessage("");
+    try {
+      const res = await auctionsApi.cancel(auction.id);
+      replaceAuction(res.data);
+      setMessage(res.message);
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể hủy phiên đấu giá.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const closeAuction = async (auction: Auction) => {
+    if (!window.confirm("Chốt phiên đấu giá và tạo đơn cho người thắng?")) return;
+    setBusyId(auction.id);
+    setMessage("");
+    try {
+      const res = await auctionsApi.close(auction.id);
+      replaceAuction(res.data);
+      setMessage(res.message);
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể chốt phiên đấu giá.");
+    } finally {
+      setBusyId("");
+    }
+  };
 
   const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
   const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
@@ -61,8 +104,8 @@ export default function SellerAuctionsPage() {
           <section className="seller-create-locked">
             <span className="material-symbols-outlined">lock</span>
             <h1>Seller tools are locked</h1>
-            <p>Bạn cần được duyệt seller trước khi quản lý đấu giá.</p>
-            <Link href="/shop">Về cửa hàng</Link>
+            <p>Bạn chưa có shop. Đăng sản phẩm đầu tiên để mở shop và dùng các công cụ này.</p>
+            <Link href="/seller/products/new">Đăng sản phẩm đầu tiên</Link>
           </section>
         ) : (
           <div className="seller-listings-page">
@@ -125,6 +168,28 @@ export default function SellerAuctionsPage() {
                           Step: {formatVnd(auction.minIncrement)}
                         </span>
                       </div>
+                      {(auction.status === "LIVE" || auction.status === "UPCOMING") && (
+                        <div className="flex flex-wrap gap-2 pt-3">
+                          {auction.status === "LIVE" && new Date(auction.endTime).getTime() <= nowMs && (
+                            <button
+                              type="button"
+                              disabled={busyId === auction.id}
+                              onClick={() => closeAuction(auction)}
+                              className="px-4 py-2 rounded-full bg-[#556138] text-white text-xs font-semibold hover:bg-[#6d7a4f] disabled:opacity-50"
+                            >
+                              Chốt phiên &amp; tạo đơn
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={busyId === auction.id}
+                            onClick={() => cancelAuction(auction)}
+                            className="px-4 py-2 rounded-full border border-[#ba1a1a]/40 text-[#ba1a1a] text-xs font-semibold hover:bg-[#ffdad6]/40 disabled:opacity-50"
+                          >
+                            Hủy phiên
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </article>
                 ))}

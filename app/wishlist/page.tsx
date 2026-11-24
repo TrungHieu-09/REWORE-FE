@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -132,10 +131,10 @@ export default function WishlistPage() {
         <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 pt-2 border-b border-[#dbc1b9]/30 mb-8">
           <div>
             <h1 className="font-display-lg text-3xl sm:text-5xl text-[#231a11] tracking-tight font-bold">
-              Curated Wishlist
+              Danh sách yêu thích
             </h1>
             <p className="font-body-md text-sm sm:text-base text-[#55433d] mt-1">
-              Your saved one-of-one pieces and tracked archival drops ({items.length} item{items.length !== 1 ? "s" : ""})
+              Những món bạn đã lưu ({items.length} item{items.length !== 1 ? "s" : ""})
             </p>
             {message && <p className="text-xs text-[#ba1a1a] mt-2 font-medium">{message}</p>}
           </div>
@@ -213,7 +212,7 @@ export default function WishlistPage() {
               Nothing saved yet
             </h2>
             <p className="font-body-md text-sm text-[#55433d] mb-6 leading-relaxed">
-              Browse the curated archive and tap the heart on any one-of-one item to keep it in your personal vault.
+              Xem đồ trong cửa hàng và bấm hình trái tim để lưu món bạn thích vào đây.
             </p>
             <Link
               href="/shop"

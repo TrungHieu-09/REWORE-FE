@@ -13,10 +13,10 @@ export default function Footer() {
             <span className="w-1.5 h-1.5 rounded-full bg-[#974226] mb-1"></span>
           </Link>
           <p className="font-body-md text-sm md:text-base text-[#6b6357]/80 leading-relaxed">
-            © 2024 REWORE Marketplace Inc. Curated vintage &amp; circular luxury.
+            © 2026 REWORE. Chợ đồ 2hand cho người Việt.
           </p>
           <p className="font-label-sm text-xs text-[#6b6357]/60">
-            Authenticated escrow verification and archival drops.
+            Mọi đơn hàng được sàn giữ tiền đến khi bạn nhận hàng.
           </p>
         </div>
 
@@ -25,37 +25,43 @@ export default function Footer() {
             href="/shop"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Editorial Journal
+            Đồ mới đăng
           </Link>
           <Link
             href="/#trust"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Authentication Guarantee
+            Sàn giữ tiền an toàn
           </Link>
           <Link
             href="/shop"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Curated Drops
+            Đồ si tuyển chọn
+          </Link>
+          <Link
+            href="/seller/products/new"
+            className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
+          >
+            Đăng bán cùng REWORE
           </Link>
           <Link
             href="/#how-it-works"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Circular Impact
+            Thời trang tuần hoàn
           </Link>
           <Link
             href="/#trust"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Terms of Service
+            Điều khoản sử dụng
           </Link>
           <Link
             href="/#trust"
             className="font-label-sm text-xs md:text-sm text-[#6b6357]/70 hover:text-[#974226] underline underline-offset-4 transition-colors"
           >
-            Privacy Policy
+            Chính sách bảo mật
           </Link>
         </div>
       </div>

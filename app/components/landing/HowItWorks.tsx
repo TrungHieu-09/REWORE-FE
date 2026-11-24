@@ -1,17 +1,17 @@
 export default function HowItWorks() {
   const steps = [
-    { id: "step-discover", num: "01", icon: "search", title: "Discover", desc: "Explore curated drops and live auctions of unique vintage finds. Filter by era, brand, or condition.", link: "/shop", linkText: "Browse drops" },
-    { id: "step-secure", num: "02", icon: "lock", title: "Secure", desc: "Hold or bid on items using our integrated reservation system with buyer protection guarantee.", link: "/auctions", linkText: "Explore auctions" },
-    { id: "step-trade", num: "03", icon: "handshake", title: "Trade", desc: "Transact safely with Trust Score verified members. Rate your experience and build your reputation.", link: "#trust", linkText: "See Trust Score" },
+    { id: "step-discover", num: "01", icon: "search", title: "Khám phá", desc: "Xem đồ 2hand mới đăng và các phiên đấu giá. Lọc theo loại, hãng và tình trạng.", link: "/shop", linkText: "Xem đồ mới" },
+    { id: "step-secure", num: "02", icon: "lock", title: "Giữ chỗ", desc: "Giữ hàng 15 phút để nhắn tin chốt đơn, hoặc đặt giá ở các phiên đấu giá. Tiền được sàn giữ đến khi bạn nhận hàng.", link: "/auctions", linkText: "Xem đấu giá" },
+    { id: "step-trade", num: "03", icon: "handshake", title: "Giao dịch", desc: "Mua bán an tâm với điểm uy tín. Mỗi đơn hoàn tất thành công đều được cộng điểm.", link: "#trust", linkText: "Xem điểm uy tín" },
   ];
 
   return (
     <section className="section" id="how-it-works">
       <div className="container">
         <div className="section-header">
-          <p className="section-eyebrow">The Process</p>
-          <h2 className="section-title">The Circular Journey</h2>
-          <p className="section-sub">Three simple steps to finding your next treasured garment.</p>
+          <p className="section-eyebrow">Cách hoạt động</p>
+          <h2 className="section-title">Mua bán đồ 2hand trong 3 bước</h2>
+          <p className="section-sub">Ba bước đơn giản để tìm món đồ tiếp theo của bạn.</p>
         </div>
         <div className="steps-grid">
           {steps.map((step) => (

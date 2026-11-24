@@ -6,11 +6,14 @@ import { AdminShell } from "../components/admin/AdminShell";
 import { EmptyState, LoadingSkeleton } from "../components/admin/AdminStates";
 import { GrowthChart, type GrowthPoint } from "../components/admin/GrowthChart";
 import { StatCard } from "../components/admin/StatCard";
-import { adminApi, type Order, type SellerApplication, type SellerReport, type User } from "../lib/api";
+import { adminApi, sellerDisplayName, type Order, type SellerApplication, type SellerReport, type User } from "../lib/api";
 import { formatVnd } from "./_utils";
+
+type TopSeller = Awaited<ReturnType<typeof adminApi.topSellers>>["data"][number];
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [topSellers, setTopSellers] = useState<TopSeller[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [reports, setReports] = useState<SellerReport[]>([]);
@@ -38,9 +41,11 @@ export default function AdminDashboardPage() {
       adminApi.orders({ limit: 50 }),
       adminApi.statsOverview(),
       adminApi.statsGrowth("week"),
-    ]).then(([userResult, appResult, reportResult, orderResult, statsResult, growthResult]) => {
+      adminApi.topSellers(5),
+    ]).then(([userResult, appResult, reportResult, orderResult, statsResult, growthResult, topResult]) => {
       if (cancelled) return;
 
+      if (topResult.status === "fulfilled") setTopSellers(topResult.value.data);
       if (userResult.status === "fulfilled") setUsers(userResult.value.data);
       if (appResult.status === "fulfilled") setApplications(appResult.value.data);
       if (reportResult.status === "fulfilled") setReports(reportResult.value.data);
@@ -152,6 +157,43 @@ export default function AdminDashboardPage() {
           <EmptyState icon="monitoring" title="Chưa có dữ liệu tăng trưởng" desc="Biểu đồ sẽ xuất hiện khi backend trả dữ liệu thống kê theo ngày." />
         </section>
       )}
+
+      <section className="admin-chart-card" style={{ marginTop: 24 }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="admin-page-sub" style={{ margin: 0 }}>Top seller</p>
+            <h2 className="admin-urgent-title" style={{ color: "#231a11", margin: 0 }}>Doanh thu cao nhất</h2>
+          </div>
+          <span className="sp-count-badge">{topSellers.length} shop</span>
+        </div>
+        {topSellers.length === 0 ? (
+          <EmptyState icon="storefront" title="Chưa có doanh thu" desc="Bảng xếp hạng seller xuất hiện khi có đơn đã thanh toán." />
+        ) : (
+          <ol className="space-y-3">
+            {topSellers.map((item, index) => (
+              <li key={item.seller.id} className="flex items-center justify-between gap-4 py-2 border-b border-[#dbc1b9]/30 last:border-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-7 h-7 rounded-full bg-[#f8e5d6] text-[#974226] text-xs font-bold flex items-center justify-center">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#231a11] truncate">
+                      {item.seller.sellerProfile?.shopName ?? sellerDisplayName(item.seller as never, item.seller.id)}
+                    </p>
+                    <p className="text-[12px] text-[#88726c] truncate">
+                      {item.seller.email ?? item.seller.id} · Uy tín {item.seller.reputation ?? 0}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="sp-price text-[18px]">{formatVnd(item.gmv_total)}</p>
+                  <p className="text-[12px] text-[#88726c]">{item.total_orders} đơn</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </AdminShell>
   );
 }

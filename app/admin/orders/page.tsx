@@ -62,6 +62,20 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const refund = async (order: Order) => {
+    const reason = window.prompt("Lý do hoàn tiền cho người mua (ví dụ: seller huỷ đơn):");
+    if (!reason || reason.trim().length < 2) return;
+    setBusyId(order.id);
+    try {
+      const res = await adminApi.refundOrder(order.id, reason.trim());
+      setOrders((items) => items.map((item) => (item.id === order.id ? res.data : item)));
+    } catch (err) {
+      setApiMessage(err instanceof ApiError ? err.message : "Không thể hoàn tiền.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   const columns = useMemo<DataColumn<Order>[]>(
     () => [
       {
@@ -69,7 +83,8 @@ export default function AdminOrdersPage() {
         header: "Mã đơn",
         render: (order) => (
           <div>
-            <p className="font-bold text-[#231a11]">{order.id}</p>
+            <p className="font-bold text-[#231a11]">RW-{order.id.slice(-8).toUpperCase()}</p>
+            <p className="text-[11px] text-[#88726c]">Nội dung chuyển khoản · {order.id}</p>
             <p className="text-[12px] text-[#88726c]">{formatShortDate(order.createdAt)}</p>
           </div>
         ),
@@ -133,6 +148,13 @@ export default function AdminOrdersPage() {
             return (
               <PillButton tone="green" disabled={busyId === order.id} onClick={() => markPaid(order)}>
                 Xác nhận đã thanh toán
+              </PillButton>
+            );
+          }
+          if (order.status === "CANCELLED" && order.paymentStatus === "PAID") {
+            return (
+              <PillButton tone="red" disabled={busyId === order.id} onClick={() => refund(order)}>
+                Hoàn tiền cho buyer
               </PillButton>
             );
           }

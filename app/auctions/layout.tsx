@@ -5,7 +5,7 @@ import AuthGuard from "@/app/components/AuthGuard";
 export const metadata: Metadata = {
   title: "Auctions — REWORE",
   description:
-    "Discover & bid on curated vintage and pre-loved pieces. Browse live sessions, upcoming drops, and ending-soon finds on REWORE.",
+    "Đấu giá đồ 2hand trên REWORE: xem phiên đang diễn ra, sắp mở và sắp kết thúc.",
 };
 
 export default function AuctionsLayout({

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { useSellerShop } from "../../components/seller/SellerShopProvider";
 import {
   ApiError,
   auctionsApi,
@@ -18,6 +19,7 @@ import {
 
 export default function SellerDashboard() {
   const { user } = useAuth();
+  const { profile: shopProfile } = useSellerShop();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
@@ -121,17 +123,17 @@ export default function SellerDashboard() {
             <span className="material-symbols-outlined text-[30px] text-[#974226]">hourglass_empty</span>
           </div>
           <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-semibold text-[#231a11] mb-3">
-            Seller dashboard is locked
+            Bắt đầu bán hàng
           </h1>
           <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
-            Tài khoản người bán do admin cấp. Hãy liên hệ để được kích hoạt.
+            Ai cũng có thể bán trên REWORE. Đăng sản phẩm đầu tiên để tự động mở shop của bạn (cần đủ điểm uy tín).
           </p>
           <Link
-            href="/shop"
+            href="/seller/products/new"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            Về cửa hàng
+            Đăng sản phẩm đầu tiên
           </Link>
         </div>
       ) : (
@@ -155,6 +157,15 @@ export default function SellerDashboard() {
             </p>
             {message && <p className="mt-2 text-sm text-[#ba1a1a]">{message}</p>}
           </div>
+
+          {shopProfile && (!shopProfile.bankName.trim() || !shopProfile.bankAccountNumber.trim()) && (
+            <div className="mb-6 rounded-[16px] border border-[#f3cca0] bg-[#fff2de] px-5 py-4 text-[14px] text-[#7b4a10] flex flex-wrap items-center justify-between gap-3">
+              <span>Bạn chưa nhập tài khoản ngân hàng nhận tiền. Sàn chưa thể chuyển tiền cho bạn khi có đơn hoàn tất.</span>
+              <Link href="/seller/settings" className="font-semibold text-[#974226] hover:underline">
+                Cập nhật ngay
+              </Link>
+            </div>
+          )}
 
           <div
             className="mb-10 bg-white rounded-[20px] border border-[#dbc1b9]/30 shadow-[0_4px_20px_-4px_rgba(43,33,24,0.06)] p-5 md:p-6 flex flex-col sm:flex-row sm:items-center gap-5 opacity-0 animate-fade-in-up"

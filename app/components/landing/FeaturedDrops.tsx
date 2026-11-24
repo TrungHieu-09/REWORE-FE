@@ -12,7 +12,7 @@ function WishlistBtn({ id }: { id: string }) {
     <button
       id={id}
       className="product-wishlist"
-      aria-label="Add to wishlist"
+      aria-label="Thêm vào yêu thích"
       onClick={() => setLiked((v) => !v)}
       style={{ color: liked ? "var(--primary)" : undefined }}
     >
@@ -58,7 +58,7 @@ function ProductCard({ id, product }: ProductProps) {
         </Link>
         <div className="product-overlay">
           <Link className="btn-quick-view" id={`quick-${id}`} href={`/products/${product.id}`}>
-            Quick View
+            Xem nhanh
           </Link>
         </div>
         <WishlistBtn id={`wish-${id}`} />
@@ -117,11 +117,11 @@ export default function FeaturedDrops() {
       <div className="container">
         <div className="section-header-row">
           <div>
-            <p className="section-eyebrow">Latest Drops</p>
-            <h2 className="section-title" style={{ textAlign: "left", marginBottom: 0 }}>Featured Pieces</h2>
+            <p className="section-eyebrow">Mới đăng</p>
+            <h2 className="section-title" style={{ textAlign: "left", marginBottom: 0 }}>Đồ nổi bật</h2>
           </div>
           <Link href="/shop" className="btn-outline-sm">
-            View all drops <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: "middle" }}>arrow_forward</span>
+            Xem tất cả <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: "middle" }}>arrow_forward</span>
           </Link>
         </div>
         {loading ? (
@@ -130,7 +130,7 @@ export default function FeaturedDrops() {
           <div className="admin-empty">
             <span className="material-symbols-outlined admin-empty-icon">inventory_2</span>
             <h3>Chưa có sản phẩm</h3>
-            <p>Featured drops sẽ xuất hiện khi backend có sản phẩm.</p>
+            <p>Đồ nổi bật sẽ hiện ở đây khi có sản phẩm.</p>
           </div>
         ) : (
           <div className="products-grid">

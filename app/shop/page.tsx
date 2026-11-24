@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -41,212 +41,6 @@ interface ShopItem {
   style: string;
 }
 
-const DEFAULT_CURATED_ITEMS: ShopItem[] = [
-  {
-    id: "curated-1",
-    name: "Double-Breasted Wool Trench",
-    brand: "Burberry Prorsum",
-    size: "40 / M",
-    condition: "Like New",
-    meta: "Burberry Prorsum · 40 / M · Like New",
-    shop: "Milano Archive Vault",
-    shopInitial: "M",
-    price: 1850000,
-    priceLabel: "1.850.000đ",
-    badge: "available",
-    category: "Jackets",
-    style: "Tailored",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBOEP4otC-ryHgvPKYY-VV9r3rrSR0PCSaMkTmKlTjj9QEvR_Aoj38k5mtIngo0hqqDy1y4nEFkJl9NYfIr5lfS4uuj7gNZAiSFsFCMSpQZ-CzameX0uCaS9JPCmCq5PQpYmGSFIzxieK7KNX0UtnYqbRHjcwEySsWTG3vZMQffyf2KG1G8sdWxqk8tyZqFxbUkdoQmjhqOn1ThJ_qZNO0T4WTWkNV7o_RzQYdTvfc",
-  },
-  {
-    id: "curated-2",
-    name: "1998 Distressed Moto Jacket",
-    brand: "Helmut Lang",
-    size: "L",
-    condition: "Excellent",
-    meta: "Helmut Lang · L · Excellent",
-    shop: "Atelier V",
-    shopInitial: "A",
-    price: 2450000,
-    priceLabel: "2.450.000đ",
-    badge: "available",
-    category: "Jackets",
-    style: "Streetwear",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCcGGVCvPOJQmShGOY3CBKfG3kpotIZWyV2sIInXEoo5fvyW8x25cDlT-had0uVrtzdbSOKvlvCUgnLojgNai2zT2uCEbXcq_bfekVlRMUj3k-oGNYV3oW9fv_RMw56ej1le_C2mFJ0ggeuIbZOVzWAF6cXD7nONUO3ify024M57MDVEu9uhNMLlULSG0SYJRhx_JZbPZEpWn3Q5pEheBKRPyOnBiZwuDhntJR-VQA",
-  },
-  {
-    id: "curated-3",
-    name: "Hand-Spun Mohair Cable Knit",
-    brand: "Loro Piana",
-    size: "M",
-    condition: "Pristine",
-    meta: "Loro Piana · M · Pristine",
-    shop: "Cotswold Vintage",
-    shopInitial: "C",
-    price: 850000,
-    priceLabel: "850.000đ",
-    badge: "auction",
-    category: "Hoodies",
-    style: "Vintage",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD7UtZiuwyQppux9C9LdY3Nfe951L96v1NkAFLleaplpsQgyfx-VMCoOEbMuZQgPKnlu6iVjrkRz2HNSxnNqvFNeMduoyiyQNUhHfiaJdeNSIfb_-RxAknupUV_Ah_NW4QYyNnosJmfNkTZ8ZejJTW8elJQpGOXV6la5j6xZtYf3kKAbbowq_hhkbSEVEg9-dEwj9RIiya52Q17bRDmTaRrDmCdrux7IxlRbFyqy9g",
-  },
-  {
-    id: "curated-4",
-    name: "90s Bias-Cut Silk Slip Dress",
-    brand: "Jil Sander",
-    size: "S",
-    condition: "Like New",
-    meta: "Jil Sander · S · Like New",
-    shop: "SoHo Relics",
-    shopInitial: "S",
-    price: 1120000,
-    priceLabel: "1.120.000đ",
-    badge: "available",
-    category: "Dresses",
-    style: "Minimalist",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDHXggzqzxRLrSQ6l8b1DobJsDQ9NaAlbZ-1DFnbhDL1FECj9mtgNOTPw7kTbb_sKWv4ipVlW2tBXtaBgBeIDNrZxLVn4zycwXG785C6VPSIiUxAu3aSuQLaXA-OQnItN9WlFaDfv5dO6_4YV6LTsuAiYIW3pEMWn5W65am9i5jetfO4yr7rKGBsC1bPGHWfRBcMzEwu2vpFhMME4nD0pySGotig0ja0f9ibL1tnIc",
-  },
-  {
-    id: "curated-5",
-    name: "Raw 16oz Selvedge Denim",
-    brand: "Studio D'Artisan",
-    size: "32x32",
-    condition: "Deadstock",
-    meta: "Studio D'Artisan · 32x32 · Deadstock",
-    shop: "Kojima Goods Co.",
-    shopInitial: "K",
-    price: 920000,
-    priceLabel: "920.000đ",
-    badge: "upcoming",
-    dropTime: "18:00",
-    category: "Denim",
-    style: "Workwear",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBCkkmVQrMW4VpLXouGum0M1kR-paNGepBLD7jkwMVkOkL7xrBHpT3M9QQYOs_WSIF555iYnVttmZzB106q0LrRRnlO7fTgUYlBFFL9fjY9LVrYq7wlm5egl53gM8kleNOoiNcBywMpZX02w4xC7sFAVoMgzPRFGYjxXCK22hq3B3KxvMD2Wwqc-osgef9WuXhfXq_5jfUkyA0_Jn04fG2YkPzZBK7HcOAqz1aHDZ4",
-  },
-  {
-    id: "curated-6",
-    name: "Poplin Tailored Oxford Shirt",
-    brand: "Margaret Howell",
-    size: "M",
-    condition: "Very Good",
-    meta: "Margaret Howell · M · Very Good",
-    shop: "London Haberdashery",
-    shopInitial: "L",
-    price: 450000,
-    priceLabel: "450.000đ",
-    badge: "available",
-    category: "Shirts",
-    style: "Minimalist",
-    imageUrl: "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "curated-7",
-    name: "Archive Triomphe Box Bag",
-    brand: "Céline",
-    size: "One Size",
-    condition: "Excellent",
-    meta: "Céline · One Size · Excellent",
-    shop: "Rue de Verneuil Vault",
-    shopInitial: "R",
-    price: 3200000,
-    priceLabel: "3.200.000đ",
-    badge: "sold",
-    category: "Bags",
-    style: "Vintage",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAZ_pcB9_UKa_3vam3g8gm0kht8A-60_3oplkf2sSmSQ76rjslMmUsj3ol1AdGfE7nAyQ63FwIS0rGmKlCiNZXRx-ol4SXCZIotSWpkWE9o37PEN-IhItUdW3usULlkmpiOUfbQkIHYph5UGrrwC7o_MGnsbd4REDNQCiaW21s1q5CFPskn8CH0QsGSGIIVxXn16J3ouog9y4evu6GsDpAdz1Apl6bEiNqVoF45h5s",
-  },
-  {
-    id: "curated-8",
-    name: "Plaited Fringe Cashmere Scarf",
-    brand: "Johnstons of Elgin",
-    size: "OS",
-    condition: "New",
-    meta: "Johnstons of Elgin · OS · New",
-    shop: "Edinburgh Looms",
-    shopInitial: "E",
-    price: 164000,
-    priceLabel: "164.000đ",
-    badge: "available",
-    category: "Accessories",
-    style: "Vintage",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC14GyoLm4wJpyQygnV1es-QKkQJPrOgETZ4zqx9MXNGOmrbXDFxDU7Ei3TnrlyZT1uiQGkm4n0qTjfY2uvHeosHRQV7RIYOCBroWxOEVTnLvLvuCyhY9jbj19o5V2qP2NfTpE0UX-rPFkl_wnGcrU2UQTcEAtXsfNdCfvlmeFbiZR_4aEMZH52eNTKQBi7P4TpSUm-o83sboqBKv-nWSqJOPiRLfDOjj7-iV-Wex8",
-  },
-  {
-    id: "curated-9",
-    name: "Alpaca Blend Ribbed Cardigan",
-    brand: "Our Legacy",
-    size: "48 / M",
-    condition: "Pristine",
-    meta: "Our Legacy · 48 / M · Pristine",
-    shop: "Nordic Resale",
-    shopInitial: "N",
-    price: 1450000,
-    priceLabel: "1.450.000đ",
-    badge: "available",
-    category: "Hoodies",
-    style: "Minimalist",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDICbjTVVKTrgO2s3hBvmbQr4_XTLD7fHAH1Xzf2dTjBHC9ZH1IudfYiugFLYF6s3c3ioRzrE3o4LM5N853D9fbby5vptVfNJHCFs2Yfqyoq6hVCLRDmMc_8IxGP_NJjY1__K1tMXy7aRttmbpTcpClIOB09TrX19BO1zSASWhHHYKRDktQlT6fMoUgyNeJxFXkbngkcjCBMaKaErat2frF-XjqokWMTD2SCkewaDE",
-  },
-  {
-    id: "curated-10",
-    name: "Double-Pleated Wool Trousers",
-    brand: "Yohji Yamamoto",
-    size: "3 / L",
-    condition: "Good",
-    meta: "Yohji Yamamoto · 3 / L · Good",
-    shop: "Tokyo Guild",
-    shopInitial: "T",
-    price: 670000,
-    priceLabel: "670.000đ",
-    badge: "auction",
-    category: "Denim",
-    style: "Tailored",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCVORHaDw1vxnq8hjUQkbmUtNmMohHSYOUBiA0h9QrxSFfx2czkRLI6beOk7Oc6aCtAaIqaQgmftwsAgXRE5f598eV8rrZFhxEWVHGdlAseOUNkY51sodpPuZPplzmj0ipGmYy8bioQ7guu5uDfnf7BFH_S65zg53fgjMjMLQIDTabGVEkGpsPUTDx6ICuDEp-KZ-T8OPlSuO6Oj2LXJBMh18qW1VT9uh0iw4LkVa4",
-  },
-  {
-    id: "curated-11",
-    name: "Archival Washed Field Vest",
-    brand: "Engineered Garments",
-    size: "M",
-    condition: "Like New",
-    meta: "Engineered Garments · M · Like New",
-    shop: "Brooklyn Surplus",
-    shopInitial: "B",
-    price: 520000,
-    priceLabel: "520.000đ",
-    badge: "available",
-    category: "Jackets",
-    style: "Workwear",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBayaFbZCcwMeuuTIXtBaHkbmijatDE2m5S8vEroCOJ6kQ9U9IoJnRtOhgSvdZ-eKsKao09T66kXeFMuqm7j6t9bvp5eHeeCbRjcNxIuRGtKnGSwHCuWnm3m3cF1mfT1i-e3kR0PT1kD8H8EXDQXBw9L1LdRZHp4iyNftGDoMs5DCGdi0AM9RtMs7HpVdDD3eIH8RZGb0GbkQFKU9Ynz7Hqr8K7FYVrMSxD1M7CyJE",
-  },
-  {
-    id: "curated-12",
-    name: "Tobacco Suede Chelsea Boots",
-    brand: "Church's",
-    size: "42 EU",
-    condition: "Excellent",
-    meta: "Church's · 42 EU · Excellent",
-    shop: "Cobbler Archive",
-    shopInitial: "C",
-    price: 1250000,
-    priceLabel: "1.250.000đ",
-    badge: "available",
-    category: "Accessories",
-    style: "Vintage",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDJO1z0IWed4Gh1401W_vfDkMS2_JLbeje8q_7eu9ZS-vc0jyMsvtgjeWFhz8kuNEmgJYIIk39AAGLB3MMOyZMkHxQXlVwuspcNaskxS-JYHz9Yh36c-nsXeNIK07zuILaDmhV1_EV5QsO2551FDR8l2Tv8fdeWSC0XewdmPyqMi_hUovW6fG_XLUgkJlY4r6HOdc02YLyxty2xkxp9ZXG5o3t7X8-5-rayr_Ljp1o",
-  },
-];
 
 const CATEGORIES = [
   "All",
@@ -260,11 +54,11 @@ const CATEGORIES = [
 ];
 
 const AVAILABILITY_TABS: { label: string; value: "all" | Badge }[] = [
-  { label: "All", value: "all" },
-  { label: "Available", value: "available" },
-  { label: "Upcoming", value: "upcoming" },
-  { label: "Auction", value: "auction" },
-  { label: "Sold", value: "sold" },
+  { label: "Tất cả", value: "all" },
+  { label: "Còn hàng", value: "available" },
+  { label: "Sắp mở", value: "upcoming" },
+  { label: "Đấu giá", value: "auction" },
+  { label: "Đã bán", value: "sold" },
 ];
 
 function formatVnd(amount: number) {
@@ -305,7 +99,7 @@ function mapApiProductToShopItem(
     id: product.id,
     apiId: product.id,
     name: product.title,
-    brand: product.brand || "Vintage Atelier",
+    brand: product.brand || "Hàng si",
     size: product.size ? `Size ${product.size}` : "Free Size",
     condition: conditionLabel(product.condition),
     meta: [product.brand, product.size ? `Size ${product.size}` : null, conditionLabel(product.condition)]
@@ -324,7 +118,7 @@ function mapApiProductToShopItem(
 }
 
 export default function ShopPage() {
-  const { isLoggedIn, isLoading, user } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [activeAvailability, setActiveAvailability] = useState<"all" | Badge>("all");
@@ -338,15 +132,16 @@ export default function ShopPage() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [modalSource, setModalSource] = useState<string>("general");
   const [noticeMessage, setNoticeMessage] = useState<string>("");
+  const [noticeIsError, setNoticeIsError] = useState(false);
+  const [cartIds, setCartIds] = useState<string[]>([]);
+  const [cartBusyId, setCartBusyId] = useState<string>("");
 
-  const [items, setItems] = useState<ShopItem[]>(DEFAULT_CURATED_ITEMS);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [items, setItems] = useState<ShopItem[]>([]);
   const [visibleCount, setVisibleCount] = useState<number>(12);
 
   // Fetch real API items if available
   useEffect(() => {
     let cancelled = false;
-    setDataLoading(true);
 
     Promise.allSettled([
       productsApi.list({ limit: 100, sortBy: "newest" }),
@@ -357,7 +152,7 @@ export default function ShopPage() {
 
         const wishlistIds = new Set<string>();
         if (wishlistResult.status === "fulfilled" && "data" in wishlistResult.value) {
-          (wishlistResult.value.data as any[]).forEach((item) => {
+          (wishlistResult.value.data as { productId?: string }[]).forEach((item) => {
             if (item.productId) wishlistIds.add(item.productId);
           });
         }
@@ -374,10 +169,7 @@ export default function ShopPage() {
         }
       })
       .catch(() => {
-        // Fallback gracefully to default curated items
-      })
-      .finally(() => {
-        if (!cancelled) setDataLoading(false);
+        // Lỗi tải thì để danh sách trống
       });
 
     return () => {
@@ -413,6 +205,26 @@ export default function ShopPage() {
     }
   };
 
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    cartApi
+      .list({ limit: 100 })
+      .then((res) => {
+        if (!cancelled) setCartIds(res.data.map((cartItem) => cartItem.productId));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn]);
+
+  const showNotice = (message: string, isError = false) => {
+    setNoticeIsError(isError);
+    setNoticeMessage(message);
+    window.setTimeout(() => setNoticeMessage(""), 4500);
+  };
+
   const handleAddToCart = async (item: ShopItem) => {
     if (!isLoggedIn) {
       setModalSource("cart");
@@ -420,22 +232,26 @@ export default function ShopPage() {
       return;
     }
 
-    if (item.apiId) {
-      try {
-        await cartApi.add(item.apiId);
-        setNoticeMessage(`🛍️ Đã thêm "${item.name}" vào giỏ hàng thành công!`);
-        setTimeout(() => setNoticeMessage(""), 4500);
-      } catch (err: any) {
-        if (err instanceof ApiError && err.status === 409) {
-          setNoticeMessage(`🛍️ "${item.name}" đã có sẵn trong giỏ hàng.`);
-        } else {
-          setNoticeMessage(err?.message || "Không thể thêm vào giỏ hàng.");
-        }
-        setTimeout(() => setNoticeMessage(""), 4500);
+    if (!item.apiId) {
+      showNotice("Sản phẩm này chưa có trong hệ thống nên chưa thể thêm vào giỏ.", true);
+      return;
+    }
+
+    const productId = item.apiId;
+    setCartBusyId(productId);
+    try {
+      await cartApi.add(productId);
+      setCartIds((current) => (current.includes(productId) ? current : [...current, productId]));
+      showNotice(`Đã thêm "${item.name}" vào giỏ hàng.`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setCartIds((current) => (current.includes(productId) ? current : [...current, productId]));
+        showNotice(`"${item.name}" đã có sẵn trong giỏ hàng.`);
+      } else {
+        showNotice(err instanceof Error && err.message ? err.message : "Không thể thêm vào giỏ hàng.", true);
       }
-    } else {
-      setNoticeMessage(`🛍️ Đã thêm "${item.name}" vào giỏ hàng thành công!`);
-      setTimeout(() => setNoticeMessage(""), 4500);
+    } finally {
+      setCartBusyId("");
     }
   };
 
@@ -485,14 +301,14 @@ export default function ShopPage() {
     }
 
     if (selectedPriceRange) {
-      if (selectedPriceRange === "<500k") {
-        result = result.filter((i) => i.price < 500000);
-      } else if (selectedPriceRange === "500k-1.5m") {
-        result = result.filter((i) => i.price >= 500000 && i.price <= 1500000);
-      } else if (selectedPriceRange === "1.5m-3m") {
-        result = result.filter((i) => i.price > 1500000 && i.price <= 3000000);
-      } else if (selectedPriceRange === ">3m") {
-        result = result.filter((i) => i.price > 3000000);
+      if (selectedPriceRange === "<200k") {
+        result = result.filter((i) => i.price < 200000);
+      } else if (selectedPriceRange === "200k-350k") {
+        result = result.filter((i) => i.price >= 200000 && i.price <= 350000);
+      } else if (selectedPriceRange === "350k-500k") {
+        result = result.filter((i) => i.price > 350000 && i.price <= 500000);
+      } else if (selectedPriceRange === ">500k") {
+        result = result.filter((i) => i.price > 500000);
       }
     }
 
@@ -514,7 +330,6 @@ export default function ShopPage() {
   ]);
 
   const displayedItems = filteredItems.slice(0, visibleCount);
-  const buyerScore = user?.reputation ?? 86;
 
   // Split displayed items to place editorial banner after first 8 items
   const firstBatch = displayedItems.slice(0, 8);
@@ -527,8 +342,15 @@ export default function ShopPage() {
 
       {/* Global alert toast if action triggered */}
       {noticeMessage && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#392e25] text-white px-6 py-3 rounded-full shadow-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
-          <span className="material-symbols-outlined text-[#dae9b5] text-lg">check_circle</span>
+        <div
+          className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] text-white px-6 py-3 rounded-full shadow-lg text-sm flex items-center gap-2 ${
+            noticeIsError ? "bg-[#ba1a1a]" : "bg-[#392e25]"
+          }`}
+          role="status"
+        >
+          <span className={`material-symbols-outlined text-lg ${noticeIsError ? "text-white" : "text-[#dae9b5]"}`}>
+            {noticeIsError ? "error" : "check_circle"}
+          </span>
           <span>{noticeMessage}</span>
         </div>
       )}
@@ -539,10 +361,10 @@ export default function ShopPage() {
         <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 pt-2">
           <div>
             <h1 className="font-display-lg text-3xl sm:text-5xl text-[#231a11] tracking-tight font-bold">
-              For You
+              Đồ 2hand mới đăng
             </h1>
             <p className="font-body-md text-sm sm:text-base text-[#55433d] mt-1">
-              Picked for your style · Updated 4 minutes ago
+              Giá từ 100K đến 500K · Mỗi món chỉ có một chiếc
             </p>
           </div>
 
@@ -552,7 +374,7 @@ export default function ShopPage() {
               htmlFor="sort-select"
               className="font-label-sm text-xs text-[#55433d] tracking-wider uppercase font-semibold"
             >
-              Sort By
+              Sắp xếp
             </label>
             <div className="relative">
               <select
@@ -561,10 +383,10 @@ export default function ShopPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none bg-white border border-[#dbc1b9]/60 text-[#231a11] font-label-md text-xs font-semibold py-2.5 pl-4 pr-10 rounded-full shadow-xs focus:border-[#231a11] focus:ring-0 cursor-pointer"
               >
-                <option value="newest">Newest arrivals</option>
-                <option value="low-to-high">Price: low to high</option>
-                <option value="high-to-low">Price: high to low</option>
-                <option value="ending-soon">Ending soon</option>
+                <option value="newest">Mới đăng</option>
+                <option value="low-to-high">Giá: thấp đến cao</option>
+                <option value="high-to-low">Giá: cao đến thấp</option>
+                <option value="ending-soon">Sắp kết thúc</option>
               </select>
               <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#88726c] text-base">
                 expand_more
@@ -661,10 +483,10 @@ export default function ShopPage() {
                 {openDropdown === "price" && (
                   <div className="absolute left-0 top-full mt-1.5 w-48 bg-white border border-[#dbc1b9]/40 rounded-xl shadow-lg p-2 z-50 space-y-1">
                     {[
-                      { label: "Dưới 500k", val: "<500k" },
-                      { label: "500k — 1.5M", val: "500k-1.5m" },
-                      { label: "1.5M — 3M", val: "1.5m-3m" },
-                      { label: "Trên 3M", val: ">3m" },
+                      { label: "Dưới 200k", val: "<200k" },
+                      { label: "200k — 350k", val: "200k-350k" },
+                      { label: "350k — 500k", val: "350k-500k" },
+                      { label: "Trên 500k", val: ">500k" },
                     ].map((p) => (
                       <button
                         key={p.val}
@@ -801,6 +623,8 @@ export default function ShopPage() {
               item={item}
               onToggleWishlist={() => toggleWishlist(item)}
               onAddToCart={() => handleAddToCart(item)}
+              inCart={Boolean(item.apiId && cartIds.includes(item.apiId))}
+              cartBusy={Boolean(item.apiId && cartBusyId === item.apiId)}
               onActionClick={handleActionClick}
             />
           ))}
@@ -821,31 +645,30 @@ export default function ShopPage() {
             <div className="relative z-10 max-w-xl text-[#ffeee1] space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#974226]/85 backdrop-blur-md text-white text-[12px] font-semibold tracking-wider uppercase">
                 <span className="w-2 h-2 rounded-full bg-[#dae9b5] animate-ping"></span>
-                Tonight's Curated Drop — 02:45:10
+                Đồ si tuyển mỗi tuần
               </div>
 
               <h2 className="font-display-lg text-2xl sm:text-4xl text-white tracking-tight leading-tight font-bold">
-                Curated Archive: Milanese Leather &amp; 90s Tailoring
+                Áo khoác, quần jean và giày 2hand giá từ 100K
               </h2>
 
               <p className="font-body-md text-[#ffeee1]/90 text-sm sm:text-base leading-relaxed max-w-md">
-                Forty-two single-owner masterpieces sourced directly from private ateliers across Lombardy.
-                Includes documented provenance and verified escrow hold.
+                Mỗi món chỉ có một chiếc, mô tả rõ tình trạng thật. Tiền được sàn giữ đến khi bạn nhận hàng.
               </p>
 
               <div className="pt-2 flex items-center gap-4 flex-wrap">
-                <button
-                  onClick={() => handleActionClick("reminder")}
+                <Link
+                  href="/seller/products/new"
                   className="px-6 py-3 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
                 >
-                  <span>Set Reminder</span>
+                  <span>Đăng bán đồ của bạn</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                </button>
+                </Link>
                 <Link
                   href="/auctions"
                   className="px-5 py-3 border border-white/40 hover:bg-white/10 rounded-full font-label-md text-xs font-semibold text-white transition-colors"
                 >
-                  Explore Drop
+                  Xem đấu giá
                 </Link>
               </div>
             </div>
@@ -861,6 +684,8 @@ export default function ShopPage() {
                 item={item}
                 onToggleWishlist={() => toggleWishlist(item)}
                 onAddToCart={() => handleAddToCart(item)}
+                inCart={Boolean(item.apiId && cartIds.includes(item.apiId))}
+                cartBusy={Boolean(item.apiId && cartBusyId === item.apiId)}
                 onActionClick={handleActionClick}
               />
             ))}
@@ -874,11 +699,11 @@ export default function ShopPage() {
               onClick={() => setVisibleCount((prev) => prev + 12)}
               className="px-8 py-3 rounded-full border border-[#974226] text-[#974226] hover:bg-[#974226] hover:text-white transition-all duration-200 font-label-md text-xs font-semibold shadow-xs active:scale-95"
             >
-              Load more
+              Xem thêm
             </button>
           )}
           <p className="font-label-sm text-xs text-[#55433d]">
-            Showing {Math.min(visibleCount, filteredItems.length)} of {filteredItems.length} items
+            Đang hiện {Math.min(visibleCount, filteredItems.length)} trên {filteredItems.length} món
           </p>
         </section>
       </main>
@@ -896,18 +721,23 @@ export default function ShopPage() {
   );
 }
 
-// Subcomponent for individual luxury product card
+// Thẻ sản phẩm
 function ProductCard({
   item,
   onToggleWishlist,
   onAddToCart,
+  inCart,
+  cartBusy,
   onActionClick,
 }: {
   item: ShopItem;
   onToggleWishlist: () => void;
   onAddToCart: () => void;
+  inCart: boolean;
+  cartBusy: boolean;
   onActionClick: (type: string) => void;
 }) {
+  const router = useRouter();
   const isSold = item.badge === "sold";
   const isHeld = item.badge === "held";
   const isAuction = item.badge === "auction";
@@ -916,7 +746,10 @@ function ProductCard({
   const productUrl = item.apiId ? `/products/${item.apiId}` : `/products/${item.id}`;
 
   return (
-    <article className={`group flex flex-col cursor-pointer ${isSold ? "opacity-85" : ""}`}>
+    <article
+      className={`group flex flex-col cursor-pointer ${isSold ? "opacity-85" : ""}`}
+      onClick={() => router.push(productUrl)}
+    >
       {/* 3/4 Aspect Ratio Card Container */}
       <div className="relative aspect-[3/4] w-full rounded-[20px] overflow-hidden bg-[#f8e5d6] shadow-sm">
         {item.imageUrl ? (
@@ -933,9 +766,9 @@ function ProductCard({
             <div className="w-14 h-14 rounded-full bg-[#feeadc] flex items-center justify-center text-[#88726c] mb-3">
               <span className="material-symbols-outlined text-2xl">checkroom</span>
             </div>
-            <span className="font-label-md text-xs text-[#231a11] font-semibold">Image unavailable</span>
+            <span className="font-label-md text-xs text-[#231a11] font-semibold">Chưa có ảnh</span>
             <span className="font-body-md text-[11px] text-[#88726c] mt-1">
-              Archival scan in re-verification
+              Món này chưa có ảnh
             </span>
           </div>
         )}
@@ -1033,23 +866,22 @@ function ProductCard({
           ) : (
             <div className="flex items-center gap-2 w-full">
               <button
+                disabled={cartBusy}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onAddToCart();
+                  if (inCart) {
+                    router.push("/cart");
+                  } else {
+                    onAddToCart();
+                  }
                 }}
-                className="flex-1 py-2.5 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold shadow-md hover:bg-[#b65a3c] transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                className={`flex-1 py-2.5 rounded-full font-label-md text-xs font-semibold shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-70 ${
+                  inCart ? "bg-white text-[#556138] hover:bg-[#f2f6e6]" : "bg-[#974226] text-white hover:bg-[#b65a3c]"
+                }`}
               >
-                <span className="material-symbols-outlined text-[17px]">shopping_bag</span>
-                <span>Thêm vào giỏ</span>
+                <span className="material-symbols-outlined text-[17px]">{inCart ? "check" : "shopping_bag"}</span>
+                <span>{cartBusy ? "Đang thêm..." : inCart ? "Đã trong giỏ · Xem giỏ" : "Thêm vào giỏ"}</span>
               </button>
-              <Link
-                href={productUrl}
-                onClick={(e) => e.stopPropagation()}
-                className="px-3.5 py-2.5 bg-white/95 text-[#231a11] hover:bg-white hover:text-[#974226] rounded-full font-label-md text-xs font-semibold shadow-md transition-all flex items-center justify-center"
-                title="Xem chi tiết &amp; Mua ngay"
-              >
-                <span className="material-symbols-outlined text-[17px]">visibility</span>
-              </Link>
             </div>
           )}
         </div>

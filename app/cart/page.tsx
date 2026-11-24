@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +10,6 @@ import {
   ApiError,
   apiAssetUrl,
   cartApi,
-  ordersApi,
   sellerDisplayName,
   type CartItem,
   type Product,
@@ -38,10 +36,7 @@ export default function CartPage() {
   const { isLoggedIn, isLoading } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
-  const [shippingAddress, setShippingAddress] = useState("");
-  const [orderNote, setOrderNote] = useState("");
 
   useEffect(() => {
     if (isLoading) return;
@@ -79,38 +74,6 @@ export default function CartPage() {
     }
   };
 
-  const buy = async (item: CartItem) => {
-    setBusyId(item.id);
-    setMessage("");
-    try {
-      const res = await ordersApi.create({
-        productId: item.productId,
-        shippingAddress: shippingAddress.trim() || undefined,
-        note: orderNote.trim() || undefined,
-      });
-      setItems((current) => current.filter((cartItem) => cartItem.id !== item.id));
-      setMessage(`${res.message} Mã đơn: ${res.data.id}`);
-    } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "Không thể tạo đơn hàng.");
-      if (err instanceof ApiError && err.status === 409) {
-        setItems((current) =>
-          current.map((cartItem) =>
-            cartItem.id === item.id
-              ? {
-                  ...cartItem,
-                  isAvailable: false,
-                  unavailableReason: "SOLD",
-                  product: { ...cartItem.product, status: "SOLD", availabilityStatus: "sold" },
-                }
-              : cartItem
-          )
-        );
-      }
-    } finally {
-      setBusyId("");
-    }
-  };
-
   const subtotal = items.reduce((sum, item) => sum + (item.product.price || 0), 0);
 
   if (isLoading || loading || !isLoggedIn) {
@@ -135,7 +98,7 @@ export default function CartPage() {
               Shopping Bag
             </h1>
             <p className="font-body-md text-sm sm:text-base text-[#55433d] mt-1">
-              Curated one-of-one pieces in your selection ({items.length} item{items.length !== 1 ? "s" : ""})
+              Món đồ bạn đã chọn, mỗi món chỉ có một chiếc ({items.length} item{items.length !== 1 ? "s" : ""})
             </p>
             {message && (
               <p className={`text-xs mt-2 font-medium ${message.includes("Mã đơn") ? "text-[#556138]" : "text-[#ba1a1a]"}`}>
@@ -162,7 +125,7 @@ export default function CartPage() {
               Your bag is empty
             </h2>
             <p className="font-body-md text-sm text-[#55433d] mb-6 leading-relaxed">
-              Discover unique archival items before they are claimed by other vintage collectors.
+              Xem thêm đồ 2hand trước khi người khác mua mất.
             </p>
             <Link
               href="/shop"
@@ -273,40 +236,12 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-3 border-t border-[#dbc1b9]/30">
-                  <div>
-                    <label className="block text-xs font-bold text-[#231a11] mb-1">
-                      Shipping Address
-                    </label>
-                    <input
-                      type="text"
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      placeholder="e.g. 123 Nguyen Hue, District 1, HCMC"
-                      className="w-full px-4 py-2 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] placeholder:text-[#88726c] focus:outline-none focus:border-[#231a11]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#231a11] mb-1">
-                      Order Notes (Optional)
-                    </label>
-                    <textarea
-                      value={orderNote}
-                      onChange={(e) => setOrderNote(e.target.value)}
-                      rows={2}
-                      placeholder="Special instructions for seller..."
-                      className="w-full px-4 py-2 bg-white border border-[#dbc1b9]/60 rounded-xl text-xs text-[#231a11] placeholder:text-[#88726c] focus:outline-none focus:border-[#231a11]"
-                    ></textarea>
-                  </div>
-                </div>
-
                 <div className="bg-[#feeadc] p-3.5 rounded-xl text-xs text-[#55433d] flex items-start gap-2.5">
                   <span className="material-symbols-outlined text-[#974226] text-lg flex-shrink-0">
                     verified_user
                   </span>
                   <p className="leading-relaxed">
-                    Orders are held under <strong>REWORE Escrow</strong>. Funds are released to the seller only after you verify the archival condition upon arrival.
+                    Orders are held under <strong>REWORE Escrow</strong>. Tiền chỉ chuyển cho người bán sau khi bạn nhận và kiểm tra hàng.
                   </p>
                 </div>
               </div>

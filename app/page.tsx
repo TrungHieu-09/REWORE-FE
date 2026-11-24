@@ -12,7 +12,6 @@ import HowItWorks from "@/app/components/landing/HowItWorks";
 import FeaturedDrops from "@/app/components/landing/FeaturedDrops";
 import TrustScore from "@/app/components/landing/TrustScore";
 import WishlistIntro from "@/app/components/landing/WishlistIntro";
-import Testimonials from "@/app/components/landing/Testimonials";
 import CtaBanner from "@/app/components/landing/CtaBanner";
 import Footer from "@/app/components/landing/Footer";
 
@@ -45,7 +44,6 @@ export default function Home() {
       <FeaturedDrops />
       <TrustScore />
       <WishlistIntro />
-      <Testimonials />
       <CtaBanner />
       <Footer />
       <ScrollTop />

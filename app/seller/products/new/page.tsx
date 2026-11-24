@@ -6,7 +6,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { PillButton } from "../../../components/admin/PillButton";
 import { StatusBadge } from "../../../components/admin/StatusBadge";
 import { useAuth } from "../../../context/AuthContext";
-import { ApiError, productsApi, sellerApi, type ProductCondition } from "../../../lib/api";
+import { ApiError, authApi, productsApi, sellerApi, type ProductCondition, type ReputationInfo } from "../../../lib/api";
 
 type ProductForm = {
   title: string;
@@ -94,7 +94,8 @@ function ProductImagePreview({
 
 export default function NewSellerProductPage() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, refreshMe } = useAuth();
+  const [reputation, setReputation] = useState<ReputationInfo | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [images, setImages] = useState<ProductImage[]>([]);
   const imagesRef = useRef<ProductImage[]>([]);
@@ -103,10 +104,15 @@ export default function NewSellerProductPage() {
   const [toast, setToast] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
-  const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
 
   const [feeRate, setFeeRate] = useState(5);
+
+  useEffect(() => {
+    authApi
+      .reputation()
+      .then((res) => setReputation(res.data))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     sellerApi
@@ -210,6 +216,7 @@ export default function NewSellerProductPage() {
       });
 
       setToast("Đã đăng sản phẩm thành công.");
+      await refreshMe();
       window.setTimeout(() => router.push("/seller/inventory"), 700);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -227,14 +234,7 @@ export default function NewSellerProductPage() {
     <div className="seller-create-root">
         {toast && <div className="admin-toast">{toast}</div>}
         <main className="seller-create-layout">
-          {!isLoading && !isSeller ? (
-            <section className="seller-create-locked">
-              <span className="material-symbols-outlined">lock</span>
-              <h1>Seller tools are locked</h1>
-              <p>Bạn cần được duyệt seller trước khi đăng bán sản phẩm.</p>
-              <Link href="/shop">Về cửa hàng</Link>
-            </section>
-          ) : (
+          {(
             <form className="seller-create-form" onSubmit={handleSubmit}>
               <header className="seller-create-head">
                 <div>
@@ -247,6 +247,19 @@ export default function NewSellerProductPage() {
                 </div>
                 <StatusBadge label="ĐĂNG BÁN NGAY" tone="green" />
               </header>
+
+              {reputation && (
+                <p
+                  className={`rounded-xl px-4 py-3 text-sm ${
+                    reputation.score >= reputation.minToSell ? "bg-[#f2f6e6] text-[#3d4a22]" : "bg-[#ffdad6] text-[#93000a]"
+                  }`}
+                >
+                  Điểm uy tín của bạn: <strong>{reputation.score}</strong>.{" "}
+                  {reputation.score >= reputation.minToSell
+                    ? `Cần từ ${reputation.minToSell} điểm để đăng bán. Người bán mới được đăng tối đa ${reputation.newSellerListingLimit} sản phẩm cho đến khi có đơn hoàn tất đầu tiên.`
+                    : `Bạn cần từ ${reputation.minToSell} điểm mới đăng bán được.`}
+                </p>
+              )}
 
               <section className="seller-create-panel">
                 <div className="seller-create-section-head">

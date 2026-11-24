@@ -3,7 +3,6 @@ import { Playfair_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { SellerProvider } from "./context/SellerContext";
-import { HoldProvider } from "./context/HoldContext";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -19,9 +18,9 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "REWORE — Give clothes a second story.",
+  title: "REWORE — Chợ đồ 2hand",
   description:
-    "Discover curated one-of-one vintage pieces and trade with confidence in our trust-based secondhand fashion community. REWORE is the premium marketplace for conscious fashion.",
+    "Chợ đồ 2hand: mua bán quần áo, giày, túi đã qua sử dụng giá tốt, an tâm với giữ tiền trung gian.",
 };
 
 export default function RootLayout({
@@ -40,7 +39,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <AuthProvider>
           <SellerProvider>
-            <HoldProvider>{children}</HoldProvider>
+            {children}
           </SellerProvider>
         </AuthProvider>
       </body>

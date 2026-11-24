@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
+import { authApi, type ReputationInfo } from "@/app/lib/api";
 
 function maskEmail(email?: string) {
   if (!email) return "Not provided";
@@ -13,6 +14,63 @@ function maskEmail(email?: string) {
 function maskPhone(phone?: string | null) {
   if (!phone) return "Not provided";
   return phone.length > 4 ? `${phone.slice(0, 3)}***${phone.slice(-4)}` : phone;
+}
+
+const REASON_LABELS: Record<string, string> = {
+  UNPAID_ORDER: "Không thanh toán đơn hàng",
+  AUCTION_UNPAID: "Thắng đấu giá nhưng không thanh toán",
+  SELLER_CANCEL_PAID: "Huỷ đơn đã được thanh toán",
+  SHIP_OVERDUE: "Giao hàng quá hạn",
+  ORDER_COMPLETED: "Đơn hàng hoàn tất",
+  ADMIN_ADJUST: "Admin điều chỉnh",
+};
+
+function ReputationPanel() {
+  const [info, setInfo] = useState<ReputationInfo | null>(null);
+
+  useEffect(() => {
+    authApi
+      .reputation()
+      .then((res) => setInfo(res.data))
+      .catch(() => undefined);
+  }, []);
+
+  if (!info) return null;
+
+  return (
+    <div className="bg-white rounded-[20px] shadow-[0_10px_40px_-10px_rgba(43,33,24,0.08)] border border-[#dbc1b9]/30 p-6">
+      <h3 className="text-[11px] font-semibold text-[#231a11] uppercase tracking-[0.08em] mb-3 border-b border-[#f2dfd1] pb-3">
+        Điểm uy tín
+      </h3>
+      <p className="text-[12px] text-[#55443d] leading-relaxed mb-3">
+        Mọi tài khoản bắt đầu từ 80 điểm. Cần từ <strong>{info.minToSell}</strong> điểm để đăng bán. Từ <strong>{info.minToBuy}</strong> điểm trở lên mua, giữ hàng và đặt giá bình thường.
+      </p>
+      {info.score <= 0 ? (
+        <p className="text-[12px] text-[#93000a] bg-[#ffdad6] rounded-lg px-3 py-2 mb-3">
+          Tài khoản đang bị khoá vì điểm uy tín về 0. Vui lòng liên hệ admin để được xem xét mở lại.
+        </p>
+      ) : info.score < info.minToBuy ? (
+        <p className="text-[12px] text-[#8b4c09] bg-[#fff2de] rounded-lg px-3 py-2 mb-3">
+          Điểm của bạn đang dưới {info.minToBuy}: vẫn mua được nhưng không giữ hàng, không đặt giá đấu giá và chỉ có một đơn chờ thanh toán cùng lúc. Hoàn tất đơn thành công để lấy lại điểm.
+        </p>
+      ) : null}
+      {info.events.length === 0 ? (
+        <p className="text-[12px] text-[#88726c]">Chưa có biến động điểm nào.</p>
+      ) : (
+        <ul className="space-y-2">
+          {info.events.slice(0, 5).map((event) => (
+            <li key={event.id} className="flex items-start justify-between gap-3 text-[12px]">
+              <span className="text-[#55443d]">{REASON_LABELS[event.reason] ?? event.reason}</span>
+              <span className={`font-bold shrink-0 ${event.delta > 0 ? "text-[#556138]" : "text-[#ba1a1a]"}`}>
+                {event.delta > 0 ? "+" : ""}
+                {event.delta}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default function ProfileRightSidebar() {
@@ -60,9 +118,11 @@ export default function ProfileRightSidebar() {
           </span>
         </h3>
         <p className="text-[13px] text-[#55443d] leading-relaxed">
-          Score is loaded from your backend reputation field.
+          Điểm thay đổi theo hành vi mua và bán của bạn.
         </p>
       </div>
+
+      <ReputationPanel />
 
       {isSeller ? (
         <div className="relative rounded-[20px] p-6 border border-[#becc9b]/50 bg-[#dae9b5]/20 overflow-hidden group">
@@ -87,7 +147,29 @@ export default function ProfileRightSidebar() {
             </Link>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="relative rounded-[20px] p-6 border border-[#ffb59e]/40 bg-[#ffdbd0]/20 overflow-hidden">
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-full bg-[#974226] text-white flex items-center justify-center mb-4 shadow-sm">
+              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                storefront
+              </span>
+            </div>
+            <h3 className="font-[family-name:var(--font-playfair)] text-[22px] font-semibold text-[#3a0b00] mb-2 leading-snug">
+              Có đồ muốn bán?
+            </h3>
+            <p className="text-[13px] text-[#7b2e14] mb-5 leading-relaxed">
+              Ai cũng có thể bán. Đăng sản phẩm đầu tiên để mở shop; sàn trừ phí khi đơn hoàn tất.
+            </p>
+            <Link
+              href="/seller/products/new"
+              className="block w-full text-center font-semibold text-[13px] tracking-wide bg-[#974226] text-white py-3 px-4 rounded-full hover:bg-[#b65a3c] transition-colors shadow-sm"
+            >
+              Đăng sản phẩm đầu tiên
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-[20px] shadow-[0_10px_40px_-10px_rgba(43,33,24,0.08)] border border-[#dbc1b9]/30 p-6">
         <h3 className="text-[11px] font-semibold text-[#231a11] uppercase tracking-[0.08em] mb-4 border-b border-[#f2dfd1] pb-3">
@@ -97,6 +179,7 @@ export default function ProfileRightSidebar() {
           {[
             { label: "Email", value: maskEmail(user?.email), action: "View" },
             { label: "Phone", value: maskPhone(user?.phone), action: "Edit" },
+            { label: "Address", value: user?.address || "Not provided", action: "Edit", italic: !user?.address },
             { label: "Payout Method", value: isSeller ? "Linked" : "Not Linked", action: isSeller ? "View" : "Link", italic: !isSeller },
           ].map(({ label, value, action, italic }) => (
             <div key={label} className="flex justify-between items-center gap-4">

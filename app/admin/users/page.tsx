@@ -72,6 +72,8 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState("");
   const [apiMessage, setApiMessage] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [repDelta, setRepDelta] = useState("");
+  const [repReason, setRepReason] = useState("");
   const { pendingSellers, openReports } = useAdminBadges();
 
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function AdminUsersPage() {
 
   const changeRole = async (role: "BUYER" | "SELLER") => {
     if (!selected) return;
-    const label = role === "SELLER" ? "cấp role Seller cho" : "thu hồi role Seller của";
+    const label = role === "SELLER" ? "mở shop (cho phép bán hàng) cho" : "khoá quyền bán hàng của";
     if (!window.confirm(`Bạn chắc chắn muốn ${label} ${selected.email}?`)) return;
 
     setBusyId(selected.id);
@@ -147,9 +149,36 @@ export default function AdminUsersPage() {
     try {
       const res = await adminApi.changeUserRole(selected.id, { role });
       updateUser({ ...selected, ...res.data });
-      setToast(role === "SELLER" ? "Đã cấp role Seller." : "Đã thu hồi role Seller.");
+      setToast(role === "SELLER" ? "Đã mở shop cho người dùng." : "Đã khoá quyền bán hàng.");
     } catch (err) {
       setDrawerMessage(err instanceof Error ? err.message : "Không thể đổi role.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const adjustReputation = async () => {
+    if (!selected) return;
+    const delta = Number(repDelta);
+    if (!Number.isInteger(delta) || delta === 0 || delta < -100 || delta > 100) {
+      setDrawerMessage("Điểm thay đổi phải là số nguyên khác 0 (từ -100 đến 100).");
+      return;
+    }
+    if (repReason.trim().length < 2) {
+      setDrawerMessage("Cần ghi lý do điều chỉnh điểm.");
+      return;
+    }
+
+    setBusyId(selected.id);
+    setDrawerMessage("");
+    try {
+      const res = await adminApi.adjustReputation(selected.id, { delta, reason: repReason.trim() });
+      updateUser({ ...selected, ...res.data });
+      setRepDelta("");
+      setRepReason("");
+      setToast("Đã cập nhật điểm uy tín.");
+    } catch (err) {
+      setDrawerMessage(err instanceof Error ? err.message : "Không thể cập nhật điểm.");
     } finally {
       setBusyId("");
     }
@@ -397,16 +426,38 @@ export default function AdminUsersPage() {
 
             {drawerMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{drawerMessage}</p>}
 
+            <div className="admin-detail-box">
+              <span className="admin-detail-label">Điểm uy tín: {selected.reputation ?? 0}/100</span>
+              <div className="mt-2 grid grid-cols-[90px_1fr_auto] gap-2 items-center">
+                <input
+                  className="admin-input"
+                  type="number"
+                  value={repDelta}
+                  onChange={(event) => setRepDelta(event.target.value)}
+                  placeholder="+/- điểm"
+                />
+                <input
+                  className="admin-input"
+                  value={repReason}
+                  onChange={(event) => setRepReason(event.target.value)}
+                  placeholder="Lý do (bắt buộc)"
+                />
+                <PillButton tone="green" disabled={busyId === selected.id} onClick={adjustReputation}>
+                  Cập nhật
+                </PillButton>
+              </div>
+            </div>
+
             {selected.role === "BUYER" && (
               <PillButton tone="green" disabled={busyId === selected.id} onClick={() => changeRole("SELLER")}>
                 <span className="material-symbols-outlined text-[16px]">storefront</span>
-                Cấp role Seller
+                Mở shop hộ
               </PillButton>
             )}
             {selected.role === "SELLER" && (
               <PillButton tone="red" disabled={busyId === selected.id} onClick={() => changeRole("BUYER")}>
                 <span className="material-symbols-outlined text-[16px]">person_off</span>
-                Thu hồi role Seller
+                Khoá bán hàng
               </PillButton>
             )}
 

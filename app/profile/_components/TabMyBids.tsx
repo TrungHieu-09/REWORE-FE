@@ -121,7 +121,7 @@ export default function TabMyBids() {
               </div>
 
               <div className="flex flex-col justify-end sm:min-w-[140px]">
-                <a href="/auctions/live" className={`w-full text-center py-2.5 rounded-xl text-xs font-semibold transition-colors ${isWinning ? "bg-[#f2dfd1] text-[#55443d] hover:bg-[#e9d7c8]" : "bg-[#b65a3c] text-white shadow-md shadow-[#b65a3c]/30 hover:bg-[#974226]"}`}>
+                <a href={`/auctions/live?id=${encodeURIComponent(bid.auctionId)}`} className={`w-full text-center py-2.5 rounded-xl text-xs font-semibold transition-colors ${isWinning ? "bg-[#f2dfd1] text-[#55443d] hover:bg-[#e9d7c8]" : "bg-[#b65a3c] text-white shadow-md shadow-[#b65a3c]/30 hover:bg-[#974226]"}`}>
                   {isWinning ? "View Auction" : "Increase Bid"}
                 </a>
               </div>

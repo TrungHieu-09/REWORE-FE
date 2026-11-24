@@ -61,6 +61,25 @@ export default function SellerOrdersPage() {
     }
   };
 
+  const cancelOrder = async (order: Order) => {
+    const paid = order.paymentStatus === "PAID";
+    const warning = paid
+      ? "Đơn này đã được thanh toán. Huỷ đơn sẽ bị trừ điểm uy tín và admin sẽ hoàn tiền cho người mua. Bạn chắc chắn?"
+      : "Huỷ đơn chưa thanh toán này?";
+    if (!window.confirm(warning)) return;
+    setBusyId(order.id);
+    setMessage("");
+    try {
+      const res = await ordersApi.updateStatus(order.id, "CANCELLED");
+      setOrders((items) => items.map((item) => (item.id === order.id ? res.data : item)));
+      setMessage(paid ? "Đã huỷ đơn. Admin sẽ hoàn tiền cho người mua." : "Đã huỷ đơn.");
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể huỷ đơn hàng.");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   return (
     <div className="seller-create-root">
         <main className="seller-create-layout">
@@ -68,8 +87,8 @@ export default function SellerOrdersPage() {
             <section className="seller-create-locked">
               <span className="material-symbols-outlined">lock</span>
               <h1>Seller orders locked</h1>
-              <p>Bạn cần được duyệt seller trước khi quản lý đơn hàng.</p>
-              <Link href="/shop">Về cửa hàng</Link>
+              <p>Bạn chưa có shop. Đăng sản phẩm đầu tiên để mở shop và dùng các công cụ này.</p>
+              <Link href="/seller/products/new">Đăng sản phẩm đầu tiên</Link>
             </section>
           ) : (
             <div className="seller-listings-page">
@@ -136,6 +155,16 @@ export default function SellerOrdersPage() {
                               <span className="material-symbols-outlined text-[16px]">local_shipping</span>
                               Đã giao hàng
                             </button>
+                            {["PENDING", "CONFIRMED", "PAID"].includes(order.status) && (
+                              <button
+                                className="admin-pill admin-pill-muted"
+                                disabled={busyId === order.id}
+                                onClick={() => cancelOrder(order)}
+                              >
+                                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                                Huỷ đơn
+                              </button>
+                            )}
                           </div>
                         </div>
                       </article>

@@ -4,16 +4,16 @@ export default function TrustScore() {
       <div className="container">
         <div className="trust-grid">
           <div className="trust-content">
-            <p className="section-eyebrow">Community First</p>
-            <h2 className="section-title" style={{ textAlign: "left" }}>Trade with Total Confidence</h2>
+            <p className="section-eyebrow">Cộng đồng là trên hết</p>
+            <h2 className="section-title" style={{ textAlign: "left" }}>Mua bán an tâm</h2>
             <p className="trust-desc">
-              Our Trust Score system creates a reputation economy where every transaction strengthens the community.
+              Điểm uy tín giúp mọi người tin nhau hơn: mỗi đơn hoàn tất thành công đều cộng điểm cho cả người mua và người bán.
             </p>
             <ul className="trust-list">
               {[
-                { icon: "shield_person", title: "Identity Verified", desc: "All members go through our ID + social verification process before listing." },
-                { icon: "rate_review", title: "Mutual Reviews", desc: "Both buyers and sellers rate each transaction, building transparent profiles." },
-                { icon: "policy", title: "Buyer Protection", desc: "Your payment is held in escrow until you confirm the item arrived as described." },
+                { icon: "shield_person", title: "Điểm uy tín", desc: "Mọi tài khoản bắt đầu từ 80 điểm. Điểm tăng khi hoàn tất đơn và giảm khi không thanh toán hay giao trễ." },
+                { icon: "rate_review", title: "Đơn hàng rõ ràng", desc: "Theo dõi từng bước của đơn: đã thanh toán, đã gửi hàng, đã giao, hoàn tất." },
+                { icon: "policy", title: "Sàn giữ tiền", desc: "Tiền của bạn được sàn giữ đến khi bạn xác nhận đã nhận hàng." },
               ].map((item) => (
                 <li className="trust-item" key={item.title}>
                   <div className="trust-item-icon">
@@ -28,7 +28,7 @@ export default function TrustScore() {
             </ul>
             <a href="/login" className="btn-cta" id="trust-cta-btn" style={{ display: "inline-flex" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>verified_user</span>
-              Get Trust Verified
+              Đăng nhập để xem điểm
             </a>
           </div>
 
@@ -39,8 +39,8 @@ export default function TrustScore() {
                   <span className="material-symbols-outlined">person</span>
                 </div>
                 <div>
-                  <p className="trust-name">Your profile</p>
-                  <p className="trust-since">Synced from your account activity</p>
+                  <p className="trust-name">Hồ sơ của bạn</p>
+                  <p className="trust-since">Lấy từ hoạt động tài khoản</p>
                 </div>
                 <div className="trust-badge-verified">
                   <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>verified</span>
@@ -54,12 +54,12 @@ export default function TrustScore() {
                   <span className="score-num">--</span>
                 </div>
                 <div className="trust-score-info">
-                  <p className="score-label">Trust Score</p>
-                  <p className="score-trades">Available after real marketplace transactions.</p>
+                  <p className="score-label">Điểm uy tín</p>
+                  <p className="score-trades">Có sau các giao dịch thật trên sàn.</p>
                 </div>
               </div>
               <div className="trust-metrics">
-                {[{ val: "--", lbl: "Response rate" }, { val: "--", lbl: "Avg. ship time" }, { val: "--", lbl: "Disputes" }].map((m) => (
+                {[{ val: "--", lbl: "Tỉ lệ phản hồi" }, { val: "--", lbl: "Thời gian giao TB" }, { val: "--", lbl: "Khiếu nại" }].map((m) => (
                   <div className="metric" key={m.lbl}>
                     <span className="metric-val">{m.val}</span>
                     <span className="metric-lbl">{m.lbl}</span>
@@ -67,7 +67,7 @@ export default function TrustScore() {
                 ))}
               </div>
               <div className="trust-reviews-preview">
-                <p className="review-text">Reviews will appear here after completed orders.</p>
+                <p className="review-text">Điểm của bạn thay đổi theo hành vi mua bán.</p>
               </div>
             </div>
           </div>

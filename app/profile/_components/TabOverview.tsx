@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import { bidsApi, ordersApi, type Bid, type Order } from "@/app/lib/api";
 
@@ -39,10 +40,12 @@ export default function TabOverview() {
       time: formatDate(bid.createdAt),
       status: bid.isWinning ? "Winning" : "Outbid",
       imageUrl: bid.auction?.product?.images?.[0],
+      href: "",
     }));
 
     const orderItems = orders.map((order) => ({
       id: `order-${order.id}`,
+      href: `/orders/${order.id}`,
       title: `Order — ${order.product?.title ?? "Marketplace item"}`,
       time: formatDate(order.createdAt),
       status: order.status,
@@ -86,9 +89,10 @@ export default function TabOverview() {
               No recent activity from the API yet.
             </div>
           ) : recentActivity.map((item, i) => (
-            <div
+            <Link
               key={item.id}
-              className={`flex items-center gap-4 p-4 group cursor-pointer hover:bg-[#fff8f5] transition-colors ${
+              href={item.href || "/profile#orders"}
+              className={`flex items-center gap-4 p-4 group hover:bg-[#fff8f5] transition-colors ${
                 i < recentActivity.length - 1 ? "border-b border-[#f2dfd1]" : ""
               }`}
             >
@@ -117,7 +121,7 @@ export default function TabOverview() {
                   {item.status}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import UserAvatar from "./UserAvatar";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useUnreadMessages } from "../hooks/useUnreadMessages";
 import { useSeller } from "../context/SellerContext";
 import LoginModal from "./LoginModal";
 
@@ -11,12 +13,13 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [modalSource, setModalSource] = useState<string>("general");
+  const [modalSource] = useState<string>("general");
   const [searchQuery, setSearchQuery] = useState("");
   const pathname = usePathname();
   const router = useRouter();
 
   const { isLoggedIn, isLoading, logout, user } = useAuth();
+  const unreadMessages = useUnreadMessages(isLoggedIn);
   const { sellerState } = useSeller();
 
   useEffect(() => {
@@ -75,7 +78,7 @@ export default function Navbar() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search curated fashion..."
+                  placeholder="Tìm áo, quần, giày, túi..."
                   className="w-full pl-10 pr-4 py-2 bg-white/90 border border-[#dbc1b9]/60 rounded-full text-sm font-medium text-[#231a11] placeholder:text-[#88726c]/70 focus:outline-none focus:border-[#231a11] focus:ring-0 transition-colors shadow-xs"
                 />
               </form>
@@ -95,7 +98,7 @@ export default function Navbar() {
                       : "text-[#55433d] hover:text-[#231a11]"
                   }`}
                 >
-                  Discover
+                  Khám phá
                 </Link>
                 <Link
                   href="/auctions"
@@ -105,20 +108,18 @@ export default function Navbar() {
                       : "text-[#55433d] hover:text-[#231a11]"
                   }`}
                 >
-                  Live Auctions
+                  Đấu giá trực tiếp
                 </Link>
-                {sellerState.isSeller && (
-                  <Link
-                    href="/seller/dashboard"
-                    className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
-                      isActive("/seller")
-                        ? "text-[#974226] border-b-2 border-[#974226]"
-                        : "text-[#55433d] hover:text-[#231a11]"
-                    }`}
-                  >
-                    My Shop
-                  </Link>
-                )}
+                <Link
+                  href={sellerState.isSeller ? "/seller/dashboard" : "/seller/products/new"}
+                  className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
+                    isActive("/seller")
+                      ? "text-[#974226] border-b-2 border-[#974226]"
+                      : "text-[#55433d] hover:text-[#231a11]"
+                  }`}
+                >
+                  {sellerState.isSeller ? "Shop của tôi" : "Bán đồ"}
+                </Link>
                 <Link
                   href="/wishlist"
                   className={`transition-colors font-label-md text-sm font-semibold pb-1 ${
@@ -127,7 +128,7 @@ export default function Navbar() {
                       : "text-[#55433d] hover:text-[#231a11]"
                   }`}
                 >
-                  Archive
+                  Yêu thích
                 </Link>
               </>
             ) : (
@@ -137,20 +138,20 @@ export default function Navbar() {
                   href="/#how-it-works"
                   className="transition-colors font-label-md text-sm font-semibold pb-1 text-[#55433d] hover:text-[#231a11]"
                 >
-                  How it Works
+                  Cách hoạt động
                 </Link>
                 <Link
                   href="/#trust"
                   className="transition-colors font-label-md text-sm font-semibold pb-1 text-[#55433d] hover:text-[#231a11]"
                 >
-                  Trust &amp; Escrow
+                  An toàn khi mua
                 </Link>
                 <Link
                   href="/shop"
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#feeadc] text-[#974226] hover:bg-[#f8e5d6] border border-[#dbc1b9]/50 font-label-md text-sm font-bold transition-all shadow-xs hover:scale-102"
                 >
                   <span className="material-symbols-outlined text-[17px]">explore</span>
-                  <span>Discover</span>
+                  <span>Khám phá</span>
                 </Link>
               </>
             )}
@@ -161,14 +162,12 @@ export default function Navbar() {
             {authed ? (
               // Logged in: Sell button, icons, account menu
               <>
-                {sellerState.isSeller && (
-                  <Link
-                    href="/seller/dashboard"
-                    className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all active:scale-[0.98] shadow-sm"
-                  >
-                    <span>Seller Studio</span>
-                  </Link>
-                )}
+                <Link
+                  href={sellerState.isSeller ? "/seller/dashboard" : "/seller/products/new"}
+                  className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 bg-[#974226] text-white rounded-full font-label-md text-xs font-semibold hover:bg-[#b65a3c] transition-all active:scale-[0.98] shadow-sm"
+                >
+                  <span>{sellerState.isSeller ? "Quản lý shop" : "Đăng bán"}</span>
+                </Link>
 
                 <div className="flex items-center gap-1 text-[#55433d]">
                   <Link
@@ -191,18 +190,23 @@ export default function Navbar() {
                   <Link
                     href="/messages"
                     className="p-2 hover:text-[#974226] hover:bg-[#f8e5d6]/50 rounded-lg transition-colors relative"
-                    title="Messages & Notifications"
+                    title="Tin nhắn"
                   >
-                    <span className="material-symbols-outlined text-[22px]">notifications</span>
+                    <span className="material-symbols-outlined text-[22px]">chat</span>
+                    {unreadMessages > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-[#974226] text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </span>
+                    )}
                   </Link>
 
                   {/* User Account Dropdown */}
                   <div className="relative group ml-1">
                     <button
-                      className="w-9 h-9 rounded-full bg-[#feeadc] text-[#974226] flex items-center justify-center font-bold text-xs hover:bg-[#f8e5d6] transition-colors border border-[#dbc1b9]/40"
+                      className="rounded-full hover:opacity-90 transition-opacity border border-[#dbc1b9]/40"
                       title={user?.name || "Account"}
                     >
-                      {user?.name ? user.name[0].toUpperCase() : <span className="material-symbols-outlined text-xl">person</span>}
+                      <UserAvatar name={user?.name} avatar={user?.avatar} size={36} />
                     </button>
 
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-[#dbc1b9]/30 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
@@ -273,13 +277,13 @@ export default function Navbar() {
                   href="/register"
                   className="px-3 sm:px-4 py-2 text-xs font-semibold text-[#55433d] hover:text-[#974226] transition-colors"
                 >
-                  Sign Up
+                  Đăng ký
                 </Link>
                 <Link
                   href="/login"
                   className="px-5 py-2.5 bg-[#974226] text-white rounded-full text-xs font-semibold hover:bg-[#b65a3c] transition-all shadow-xs active:scale-95"
                 >
-                  Log In
+                  Đăng nhập
                 </Link>
               </div>
             )}
@@ -311,7 +315,7 @@ export default function Navbar() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search curated fashion..."
+                      placeholder="Tìm áo, quần, giày, túi..."
                       className="w-full pl-10 pr-4 py-2 bg-white border border-[#dbc1b9]/60 rounded-full text-sm font-medium text-[#231a11]"
                     />
                   </form>
@@ -322,30 +326,28 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="block text-sm font-semibold py-1.5 text-[#231a11]"
                 >
-                  Discover
+                  Khám phá
                 </Link>
                 <Link
                   href="/auctions"
                   onClick={() => setMobileOpen(false)}
                   className="block text-sm font-semibold py-1.5 text-[#231a11]"
                 >
-                  Live Auctions
+                  Đấu giá trực tiếp
                 </Link>
-                {sellerState.isSeller && (
-                  <Link
-                    href="/seller/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="block text-sm font-semibold py-1.5 text-[#974226]"
-                  >
-                    My Shop
-                  </Link>
-                )}
+                <Link
+                  href={sellerState.isSeller ? "/seller/dashboard" : "/seller/products/new"}
+                  onClick={() => setMobileOpen(false)}
+                  className="block text-sm font-semibold py-1.5 text-[#974226]"
+                >
+                  {sellerState.isSeller ? "Shop của tôi" : "Bán đồ"}
+                </Link>
                 <Link
                   href="/wishlist"
                   onClick={() => setMobileOpen(false)}
                   className="block text-sm font-semibold py-1.5 text-[#231a11]"
                 >
-                  Archive / Wishlist
+                  Yêu thích
                 </Link>
                 <Link
                   href="/cart"
@@ -379,14 +381,14 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="block text-sm font-semibold py-1.5 text-[#55433d] hover:text-[#231a11]"
                 >
-                  How it Works
+                  Cách hoạt động
                 </Link>
                 <Link
                   href="/#trust"
                   onClick={() => setMobileOpen(false)}
                   className="block text-sm font-semibold py-1.5 text-[#55433d] hover:text-[#231a11]"
                 >
-                  Trust &amp; Escrow
+                  An toàn khi mua
                 </Link>
                 <Link
                   href="/shop"
@@ -394,7 +396,7 @@ export default function Navbar() {
                   className="inline-flex items-center gap-2 px-3.5 py-1.5 my-1 rounded-full bg-[#feeadc] text-[#974226] text-sm font-bold border border-[#dbc1b9]/50"
                 >
                   <span className="material-symbols-outlined text-[17px]">explore</span>
-                  <span>Discover</span>
+                  <span>Khám phá</span>
                 </Link>
 
                 <div className="pt-3 border-t border-[#dbc1b9]/30 flex gap-2">
@@ -403,14 +405,14 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 py-2.5 text-center text-xs font-semibold border border-[#dbc1b9] text-[#231a11] rounded-full hover:bg-white"
                   >
-                    Sign Up
+                    Đăng ký
                   </Link>
                   <Link
                     href="/login"
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 py-2.5 text-center text-xs font-semibold bg-[#974226] text-white rounded-full hover:bg-[#b65a3c]"
                   >
-                    Log In
+                    Đăng nhập
                   </Link>
                 </div>
               </>

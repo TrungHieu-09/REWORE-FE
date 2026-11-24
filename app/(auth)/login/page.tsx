@@ -73,14 +73,14 @@ export default function LoginPage() {
           <div className="auth-tagline-card">
             <h2 className="auth-tagline-title">Secondhand fashion drops, held fairly.</h2>
             <p className="auth-tagline-desc">
-              Discover one-of-one vintage pieces, join live auctions, and trade with trust in our curated marketplace.
+              Săn đồ 2hand mỗi món một chiếc, tham gia đấu giá và mua bán an tâm.
             </p>
           </div>
           <div className="auth-hero-footer">
             <Link href="/" className="auth-brand-primary">REWORE.</Link>
             <div className="auth-trust-seal">
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#974226", fontVariationSettings: "'FILL' 1" }}>verified</span>
-              <span>Trust Verified Platform</span>
+              <span>Sàn giữ tiền an toàn</span>
             </div>
           </div>
         </div>

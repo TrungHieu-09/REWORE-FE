@@ -69,14 +69,14 @@ export default function RegisterPage() {
           <div className="auth-tagline-card">
             <h2 className="auth-tagline-title">Join a community that cares about fashion & planet.</h2>
             <p className="auth-tagline-desc">
-              Create your free account and start discovering curated vintage pieces, live auction drops, and sustainable style.
+              Tạo tài khoản miễn phí để mua đồ 2hand giá tốt, tham gia đấu giá và bán đồ cũ của bạn.
             </p>
           </div>
           <div className="auth-hero-footer">
             <Link href="/" className="auth-brand-primary">REWORE.</Link>
             <div className="auth-trust-seal">
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#974226", fontVariationSettings: "'FILL' 1" }}>verified</span>
-              <span>Trust Verified Platform</span>
+              <span>Sàn giữ tiền an toàn</span>
             </div>
           </div>
         </div>

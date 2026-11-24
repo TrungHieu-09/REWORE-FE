@@ -52,10 +52,10 @@ export default function LoginModal({ isOpen, onClose, actionSource }: LoginModal
             {actionSource === "hold"
               ? "Verified members receive 15-minute escrow hold privileges to reserve one-of-a-kind vintage items."
               : actionSource === "sell"
-              ? "Log in or register to set up your boutique and sell verified archival clothing."
+              ? "Đăng nhập hoặc đăng ký để mở shop và đăng bán đồ của bạn."
               : actionSource === "wishlist"
-              ? "Save one-of-one pieces to your curated wishlist and track price drops."
-              : "Access verified 15-minute escrow hold protection, sync your curated wishlist, and place bids on live archival drops."}
+              ? "Lưu món bạn thích vào danh sách yêu thích để xem lại sau."
+              : "Đăng nhập để giữ hàng 15 phút, lưu danh sách yêu thích và đặt giá đấu giá."}
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export default function LoginModal({ isOpen, onClose, actionSource }: LoginModal
 
         <div className="mt-6 pt-4 border-t border-[#dbc1b9]/30 text-center">
           <p className="font-label-sm text-[12px] text-[#55433d]">
-            Protected by REWORE Escrow Guarantee &amp; Authentication Protocol.
+            Tiền được REWORE giữ đến khi bạn nhận hàng.
           </p>
         </div>
       </div>

@@ -12,22 +12,22 @@ export default function WishlistIntro() {
           >
             favorite
           </span>
-          <p className="section-eyebrow" style={{ textAlign: "left" }}>Your Wardrobe, Curated</p>
+          <p className="section-eyebrow" style={{ textAlign: "left" }}>Tủ đồ của bạn</p>
           <h2
             className="section-title"
             style={{ textAlign: "left", marginBottom: "20px" }}
           >
-            Save the Pieces<br />You Love
+            Lưu những món<br />bạn thích
           </h2>
           <p className="wishlist-intro-desc">
-            Bookmark rare vintage finds, track live auction items, and get instant alerts when prices drop. Your personal wishlist keeps your dream wardrobe always within reach.
+            Lưu món bạn thích, theo dõi các phiên đấu giá và quay lại mua khi cần. Danh sách yêu thích giúp tủ đồ mơ ước của bạn luôn trong tầm tay.
           </p>
 
           <ul className="wishlist-intro-perks">
             {[
-              { icon: "notifications", text: "Price drop & restock alerts" },
-              { icon: "balance",               text: "Track live auction items" },
-              { icon: "group",               text: "Share your wishlist with friends" },
+              { icon: "notifications", text: "Lưu món bạn thích" },
+              { icon: "balance",               text: "Theo dõi món đấu giá" },
+              { icon: "group",               text: "Xem lại bất cứ lúc nào" },
             ].map((p) => (
               <li key={p.icon} className="wishlist-intro-perk">
                 <span className="material-symbols-outlined wishlist-perk-icon">
@@ -42,7 +42,7 @@ export default function WishlistIntro() {
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
               login
             </span>
-            Sign in to start saving
+            Đăng nhập để bắt đầu lưu
           </a>
         </div>
 

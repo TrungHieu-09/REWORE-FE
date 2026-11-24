@@ -21,9 +21,6 @@ export default function SellerGuard({ children }: { children: React.ReactNode })
       return;
     }
 
-    if (user.role !== "SELLER" && user.role !== "ADMIN") {
-      router.replace("/shop");
-    }
   }, [user, isLoading, router]);
 
   // Đang load session
@@ -41,7 +38,7 @@ export default function SellerGuard({ children }: { children: React.ReactNode })
   }
 
   // Chưa đăng nhập hoặc không phải seller — render nothing (redirect đang xảy ra)
-  if (!user || (user.role !== "SELLER" && user.role !== "ADMIN")) {
+  if (!user) {
     return null;
   }
 
